@@ -72,8 +72,8 @@ parser <- add_option(parser,
                      help="Output directory for the PoreQuality report"
                      )
 options=parse_args(parser)
-#input.file=options$input.file
-input.file="~/10X-3_summary.txt" # <- useful if you want to specify a summary to run manually
+input.file=options$input.file
+#input.file="~/sequencing_summary.txt" # <- useful if you want to specify a summary to run manually
 bream.file=options$bream.file
 output.dir=options$output.dir
 ```
@@ -135,24 +135,6 @@ active.channels = length(unique(seq_dt$channel))
 #flowcell.quality = (active.channels / 512)*100
 run.length = (max(seq_dt$start_time)) %/% 3600
 ```
-
-<!--|*Property*|*Statistic*|
-|:---------|:----------|
-|Total giga-bases|`r I(total.bases)`|
-|Total reads (millions)|`r I(total.reads)`|
-|Reads >= Q7, fraction of total|`r I(total.pass.reads)` (`r I((total.pass.reads/total.reads)*100)`%)|
-|Reads >= Q10, fraction of total|`r I(total.ten.reads)` (`r I((total.ten.reads/total.reads)*100)`%)|
-|Longest read|`r I(max.length)`|
-|Longest passing read|`r I(max.pass.length)`|
-|N50 read|`r I(N50.read)`|
-|L50 read length|`r I(N50.length)`|
-|Mean length|`r I(mean.length)`|
-|Median length|`r I(median.length)`|
-|Mean quality|`r I(mean.q)`|
-|Median quality|`r I(median.q)`|
-|Active sensors|`r I(active.channels)`|
-|Runtime (hours)|`r I(run.length)`| !-->
-
 ### Total yield (gbp)
 
 ```{r, include=TRUE}

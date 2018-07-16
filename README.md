@@ -29,7 +29,7 @@ POREquality requires pandoc to be installed, which we recommend you do via your 
     
 ## Installation
 
-## Required R packages
+### Required R packages
 
 ```r
 required.packages <- c("data.table","flexdashboard","dplyr","plyr","ggplot2","knitr","optparse","RColorBrewer","reshape2")
@@ -76,11 +76,11 @@ Alternatively, one could just run the Rscript supplying the required sequencing 
 
 ## Future development
 
-    * Ensure the new re-factored code accepts any ONT sequencing summary gracefully
-    * Add PromethION support (physical flowcell layout, ensure compatiable with existing workflows, etc)
-    * Simplify installation of POREquality via dependency management like [Packrat](https://rstudio.github.io/packrat/)
-    * Add in bream log support for interrogation of drift voltages, etc.
-    * Refactor R code to use fewer packages and embrace data.table to enable key-value/set operations for performance
+   * Ensure the new re-factored code accepts any ONT sequencing summary gracefully
+   * Add PromethION support (physical flowcell layout, ensure compatiable with existing workflows, etc)
+   * Simplify installation of POREquality via dependency management like [Packrat](https://rstudio.github.io/packrat/)
+   * Add in bream log support for interrogation of drift voltages, etc.
+   * Refactor R code to use fewer packages and embrace data.table to enable key-value/set operations for performance
     
 ## Contributing
 

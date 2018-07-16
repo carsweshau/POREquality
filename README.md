@@ -11,9 +11,7 @@ This is an early version of POREquality, an R Markdown script designed to run as
     
 ## Requirements
 
-POREquality has currently only been tested on Ubuntu, although provided the dependencies are met it (in theory) should be able to run on other operating systems.
-
-POREquality requires pandoc to be installed, which we recommend you do via your package manager. Currently these R packages are required:
+POREquality has currently only been tested on Ubuntu, although provided the dependencies are met it (in theory) should be able to run on other operating systems. POREquality requires pandoc to be installed, which we recommend you do via your package manager. Currently these R packages are required:
 
    * data.table
    * flexdashboard
@@ -88,7 +86,7 @@ As this is my first release, I would greatly appreciate any feedback to improve 
 
 I would like to thank [Dr. Martin Smith](https://twitter.com/martinalexsmith) for the patient encouragment, as well as the rest of the [Genomic Technologies Group](https://www.garvan.org.au/research/kinghorn-centre-for-clinical-genomics/clinical-genomics/programs/genomic-technologies), [Dr. Kirston Barton](@DrKirston) and [James Ferguson](@Psy_Fer_) for all their hard work and advice.
 
-Furthermore, the wider Nanopore community is a fantastic and welcoming place, and there are many aspects of POREquality which would not exist were it not for the hard work of many others providing this environment.
+Furthermore, the wider Nanopore community is a fantastic and welcoming place, and there are many aspects of POREquality which could not exist were it not for the hard work of many others providing this environment.
 
 ## License
 

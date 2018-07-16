@@ -1,0 +1,407 @@
+---
+title: "A POREquality report"
+output: 
+  flexdashboard::flex_dashboard:
+    theme: bootstrap
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r presetup, include=FALSE}
+library(data.table) # used for fread, optimize reading sequencing summaries
+library(flexdashboard) # used for dashboard output
+library(dplyr) # data frame manipulation, these libraries should not be loaded in this order!
+library(plyr) # purely for rbind.fill, should replace with bind_rows
+library(ggplot2) # main plotting functions
+library(knitr) # creates .html output
+library(optparse) # used to run .Rmd script from command line
+library(RColorBrewer) # not strictly needed, but using for particular colours
+library(reshape2) # used for acast
+
+options(scipen=999)
+options(digits=2)
+hm.palette <- colorRampPalette(brewer.pal(9, 'RdPu'), space='Lab') #RdPu, Oranges, Greens, YlOrRd, Purples
+dv.palette <- colorRampPalette(brewer.pal(9, 'Spectral'),space='Lab')
+```
+
+```{r global_options, include=FALSE}
+opts_chunk$set(fig.width=12, fig.height=8, include=FALSE, echo=FALSE, warning=FALSE, message=FALSE)
+```
+
+```{r functions, include=FALSE}
+log10_minor_break = function (...){
+    #https://stackoverflow.com/questions/30179442/plotting-minor-breaks-on-a-log-scale-with-ggplot
+    function(x) {
+        minx         = floor(min(log10(x), na.rm=T))-1;
+        maxx         = ceiling(max(log10(x), na.rm=T))+1;
+        n_major      = maxx-minx+1;
+        major_breaks = seq(minx, maxx, by=1)
+        minor_breaks = 
+            rep(log10(seq(1, 9, by=1)), times = n_major)+
+            rep(major_breaks, each = 9)
+        return(10^(minor_breaks))
+    }
+}
+
+readN = function(length, N=50, ...){
+    N = N / 100
+    sorted = rev(sort(length))
+    R50 = sorted[cumsum(sorted) >= sum(sorted)*N][1]
+    return(R50)
+}
+```
+
+```{r option_parsing, include=FALSE}
+parser <- OptionParser()
+parser <- add_option(parser,
+                     opt_str=c("-i", "--input"),
+                     type="character",
+                     dest='input.file',
+                     help="Input path to a Nanopore sequencing summary file"
+                     )
+parser <- add_option(parser,
+                     opt_str=c("-b", "--bream"),
+                     type="character",
+                     dest='bream.file',
+                     help="Input path to a Nanopore bream-log file"
+                     )
+parser <- add_option(parser,
+                     opt_str=c("-o", "--output"),
+                     type="character",
+                     dest='output.dir',
+                     help="Output directory for the PoreQuality report"
+                     )
+options=parse_args(parser)
+#input.file=options$input.file
+input.file="~/10X-3_summary.txt" # <- useful if you want to specify a summary to run manually
+bream.file=options$bream.file
+output.dir=options$output.dir
+```
+
+```{r setup, include=FALSE}
+seq_dt <- fread(input.file) # faster than optimized read.table call
+seq_dt <- seq_dt[order(seq_dt$start_time),]
+seq_dt$cumulative_bases <- cumsum(as.numeric(seq_dt$sequence_length_template))/10^9
+muxes <- seq(from = 0, to = max(seq_dt$start_time %/% 3600), by = 8)
+seq_dt[is.na(seq_dt)] <- 0 # sanitizing
+```
+
+```{r GridION_flowcell_layout, include=FALSE}
+# https://gist.github.com/roblanf/df47b9748c3aae00809cc675aca79989
+# build the map for R9.5 flowcell, as a long-form dataframe that translates
+# channels into rows and columns on the flowcell. Good for plotting in R.
+p1 = data.frame(channel=33:64, row=rep(1:4, each=8), col=rep(1:8, 4))
+p2 = data.frame(channel=481:512, row=rep(5:8, each=8), col=rep(1:8, 4))
+p3 = data.frame(channel=417:448, row=rep(9:12, each=8), col=rep(1:8, 4))
+p4 = data.frame(channel=353:384, row=rep(13:16, each=8), col=rep(1:8, 4))
+p5 = data.frame(channel=289:320, row=rep(17:20, each=8), col=rep(1:8, 4))
+p6 = data.frame(channel=225:256, row=rep(21:24, each=8), col=rep(1:8, 4))
+p7 = data.frame(channel=161:192, row=rep(25:28, each=8), col=rep(1:8, 4))
+p8 = data.frame(channel=97:128, row=rep(29:32, each=8), col=rep(1:8, 4))
+
+q1 = data.frame(channel=1:32, row=rep(1:4, each=8), col=rep(16:9, 4))
+q2 = data.frame(channel=449:480, row=rep(5:8, each=8), col=rep(16:9, 4))
+q3 = data.frame(channel=385:416, row=rep(9:12, each=8), col=rep(16:9, 4))
+q4 = data.frame(channel=321:352, row=rep(13:16, each=8), col=rep(16:9, 4))
+q5 = data.frame(channel=257:288, row=rep(17:20, each=8), col=rep(16:9, 4))
+q6 = data.frame(channel=193:224, row=rep(21:24, each=8), col=rep(16:9, 4))
+q7 = data.frame(channel=129:160, row=rep(25:28, each=8), col=rep(16:9, 4))
+q8 = data.frame(channel=65:96, row=rep(29:32, each=8), col=rep(16:9, 4))
+
+# long form as a data frame, i.e. map$channel[[1]] returns 33
+map = rbind(p1, p2, p3, p4, p5, p6, p7, p8, q1, q2, q3, q4, q5, q6, q7, q8)
+```
+
+Rows {data-width=250}
+-------------------------------------
+
+```{r summary_stats, include=FALSE}
+pass_df = subset(seq_dt, mean_qscore_template >= 7)
+ten_df = subset(pass_df, mean_qscore_template >= 10)
+total.bases = sum(as.numeric(seq_dt$sequence_length_template),na.rm=T)/10^9
+total.reads = nrow(seq_dt)
+total.pass.reads = nrow(pass_df)
+total.ten.reads = nrow(ten_df)
+seq_dt$hours = seq_dt$start_time %/% 3600 # %/% gives integer division
+N50.read = readN(as.numeric(seq_dt$sequence_length_template),50)
+N50.length = seq_dt$sequence_length_template[min(which(seq_dt$cumulative_bases > (total.bases/2)))]
+mean.length = round(mean(as.numeric(seq_dt$sequence_length_template)), digits = 1)
+median.length = round(median(as.numeric(seq_dt$sequence_length_template)), digits = 1)
+max.length = max(as.numeric(seq_dt$sequence_length_template))
+max.pass.length = max(as.numeric(pass_df$sequence_length_template))
+mean.q = round(mean(seq_dt$mean_qscore_template), digits = 1)
+median.q = round(median(seq_dt$mean_qscore_template), digits = 1)
+active.channels = length(unique(seq_dt$channel))
+#flowcell.quality = (active.channels / 512)*100
+run.length = (max(seq_dt$start_time)) %/% 3600
+```
+
+<!--|*Property*|*Statistic*|
+|:---------|:----------|
+|Total giga-bases|`r I(total.bases)`|
+|Total reads (millions)|`r I(total.reads)`|
+|Reads >= Q7, fraction of total|`r I(total.pass.reads)` (`r I((total.pass.reads/total.reads)*100)`%)|
+|Reads >= Q10, fraction of total|`r I(total.ten.reads)` (`r I((total.ten.reads/total.reads)*100)`%)|
+|Longest read|`r I(max.length)`|
+|Longest passing read|`r I(max.pass.length)`|
+|N50 read|`r I(N50.read)`|
+|L50 read length|`r I(N50.length)`|
+|Mean length|`r I(mean.length)`|
+|Median length|`r I(median.length)`|
+|Mean quality|`r I(mean.q)`|
+|Median quality|`r I(median.q)`|
+|Active sensors|`r I(active.channels)`|
+|Runtime (hours)|`r I(run.length)`| !-->
+
+### Total yield (gbp)
+
+```{r, include=TRUE}
+valueBox(round(total.bases,2), 
+         icon="glyphicon-save",
+         color=ifelse(total.bases < 5,"danger","primary"))
+```
+
+### Total reads (millions)
+
+```{r, include=TRUE}
+valueBox(round(total.reads/10^6,2),
+         icon="fa-area-chart")
+```
+
+### N50 read rank
+
+```{r, include=TRUE}
+valueBox(round(N50.read,2),
+         icon="glyphicon-stats")
+```
+
+### L50 read length (kbp)
+
+```{r, include=TRUE}
+valueBox(round(N50.length/10^3,2),
+         icon="glyphicon-stats")
+```
+
+### Mean length (kbp)
+
+```{r, include=TRUE}
+valueBox(round(mean.length/10^3,2),
+         icon="glyphicon-stats")
+```
+
+### Mean quality
+
+```{r, include=TRUE}
+valueBox(round(mean.q,2),
+         icon="glyphicon-stats")
+```
+
+### High quality reads
+
+```{r, include=TRUE}
+prop.hq <- round((total.pass.reads/total.reads)*100,2)
+valueBox(paste0(sprintf("%.2f",prop.hq),"%"),
+         icon="fa-check",
+         color=ifelse(prop.hq < 70,"danger","primary"))
+```
+
+### Runtime (hours)
+
+```{r, include=TRUE}
+valueBox(round(run.length,2),
+         icon="glyphicon-time")
+```
+
+### Active channels
+
+```{r, include=TRUE}
+flowcell.quality <- round((active.channels / 512)*100,0)
+gauge(flowcell.quality,min=0,max=100,symbol='%',gaugeSectors(success=c(95,100),warning=c(80,94),danger=c(0,79)))
+```
+
+Row {.tabset .tabset-fade}
+-----------------------------------------------------------------------
+
+### Reads per sensor
+
+```{r channel_activity}
+s <- seq_dt[, list(channel)]
+rst <- as.data.frame(table(unlist(s)))
+colnames(rst)[1] <- "channel"
+flowcell <- matrix(rst, nrow=32, ncol=16)
+
+for (i in 1:512){
+    if (!i %in% s$channel){
+        new.row <- data.frame(channel=i, stringsAsFactors = F)
+        rst <- rbind.fill(rst, new.row)
+    }
+}
+rst[is.na(rst)] <- 0
+rst <- rst[order(as.numeric(rst$channel)),]
+map <- map[order(as.numeric(map$channel)),]
+map <- cbind(map, data.frame(frequency=0, stringsAsFactors = F))
+# cbind Freq to map, then use that to plot
+for (i in 1:512){
+    map[i,]$frequency <- rst[i,]$Freq
+}
+
+# matrix form, so it looks like the flowcell
+map.matrix = acast(map, col ~ row, value.var = "frequency")
+```
+
+```{r channel_plot, include=TRUE}
+ggplot(map, aes(x = row, y = col, fill = frequency)) +
+    geom_tile() +
+    geom_text(data=map,aes(x=row, y=col,label=frequency,color=frequency),show.legend = F) +
+    scale_x_discrete(breaks=NULL) +
+    scale_y_discrete(breaks=NULL) +
+    coord_equal() +
+    scale_fill_gradientn(colours = hm.palette(100)) +
+    scale_color_gradient2(low = hm.palette(100), high = hm.palette(1)) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+    theme_classic() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        legend.position="bottom",
+        legend.key.width=unit(5.6,"cm"))
+```
+
+### Read length distribution
+
+```{r read_len}
+bnum=subset(seq_dt, sequence_length_template > 0)
+```
+```{r read_len_plot, include=TRUE}
+ggplot(bnum, aes(x=sequence_length_template)) +
+    geom_histogram(bins=200,colour=hm.palette(9)[8], fill=hm.palette(9)[4]) +
+    scale_y_continuous(expand=c(0,0)) +
+    scale_x_continuous(limits=c(0,mean.length*2.5),breaks=pretty(bnum$sequence_length_template,n=40)) +
+    xlab("Read length\n") +
+    ylab("Number of reads\n") +
+    geom_vline(xintercept = N50.length, size = 1) +
+    geom_text(aes(x=N50.length, label="N50", y=+Inf),vjust=+1,hjust=-.4) +
+    geom_vline(xintercept = mean.length, size = 1) +
+    geom_text(aes(x=mean.length, label="Mean", y=+Inf),vjust=+1,hjust=-.4) +
+    theme_classic() + theme(axis.title = element_text(size=20),
+        axis.text.x = element_text(angle=45, hjust=1, size=12),
+        axis.text.y = element_text(size=12))
+```
+
+### Mean quality distribution per read
+
+```{r readqual, include=TRUE}
+ggplot(seq_dt, aes(x=mean_qscore_template)) +
+    geom_histogram(bins=max(seq_dt$mean_qscore_template),binwidth=1, colour=hm.palette(9)[8], fill=hm.palette(9)[4]) +
+    scale_x_continuous(breaks=0:max(seq_dt$mean_qscore_template)) +
+    scale_y_continuous(expand=c(0,0)) +
+    xlab("\nMean quality of reads") +
+    ylab("Number of reads\n") +
+    theme_classic() + theme(axis.title = element_text(size=20),
+        axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12))
+```
+
+### Base quality over time
+```{r base_qual_time}
+seq_dt$Qscore_thresh = "Mean qscore >= 7"
+seq_dt$Qscore_thresh[which(seq_dt$mean_qscore_template<7)] = "Mean qscore < 7"
+```
+```{r base_qual_time_plot,include=TRUE}
+ggplot(seq_dt, aes(x=start_time/3600, y=mean_qscore_template, colour=Qscore_thresh, group=Qscore_thresh)) +
+    geom_vline(xintercept = muxes, colour = 'black', linetype = 'dashed', alpha = 0.5) +
+    geom_smooth() +
+    scale_color_manual(name="Mean qscore threshold", values=c(hm.palette(9)[8],hm.palette(9)[4])) +
+    xlab("Hours into run") +
+    ylab("Mean quality score") +
+    ylim(0, NA) +
+    theme_classic() + theme(axis.title = element_text(size=20),
+        axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12))
+```
+
+### Quality and length distribution
+```{r density2d, include=TRUE}
+commonTheme = list(labs(color="Density",fill="Density",
+                        x="\nLog Read Length",
+                        y="Mean Read Quality Score\n"),
+                   theme_classic())
+
+ggplot(seq_dt, aes(x=seq_dt$sequence_length_template,y=seq_dt$mean_qscore_template)) +
+    stat_density2d(aes(fill=..level..),geom='polygon') +
+    scale_fill_gradientn(colors = rev(dv.palette(100))) +
+    scale_x_log10(expand=c(0,0),minor_breaks=log10_minor_break()) +
+    scale_y_continuous(expand=c(0,0)) +
+    commonTheme +
+    theme(axis.title = element_text(size = 20),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12))
+```
+
+### Pore activity
+```{r death_rate}
+time_hours=c(0.003,0.011,0.66)
+for (i in seq(1,run.length,1)){time_hours[i+3]<-i} # append up to run length, after the intial early minutes
+death_df <- data.frame(time_hours)
+death_list = list()
+for (i in 1:length(time_hours)){
+    active_at_time = length(unique(subset(seq_dt$channel, seq_dt$start_time / 3600 > time_hours[i] & seq_dt$start_time / 3600 < time_hours[i+1])))
+    death_list[[i]] <- active_at_time
+}
+death_df$active_sensors <- do.call(rbind, death_list)
+```
+
+```{r death_rate_plot, include=TRUE}
+ggplot(data=death_df,aes(x=death_df$time_hours,y=death_df$active_sensors)) +
+    geom_point() +
+    geom_line(colour=hm.palette(9)[8]) +
+    geom_vline(xintercept = muxes, colour = 'black', linetype = 'dashed', alpha = 0.5) +
+    scale_x_continuous(expand=c(0,0),breaks = pretty(death_df$time_hours,n=10)) +
+    scale_y_continuous(expand=c(0,0),breaks = pretty(death_df$active_sensors,n=10)) +
+    coord_cartesian(ylim = c(0, 512)) +
+    theme_classic() +
+    theme(axis.title = element_text(size = 20),axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12)) +
+        xlab("\nTime (hours)") +
+        ylab("Active channels\n")
+```
+
+### Cumulative yield
+```{r yield, include=TRUE}
+```
+```{r yield_plot, include=TRUE}
+ggplot(data=seq_dt,aes(x=seq_dt$start_time / 3600)) +
+    geom_line(aes(y=seq_dt$cumulative_bases),colour=hm.palette(9)[8]) +
+    geom_vline(xintercept = muxes, colour = 'black', linetype = 'dashed', alpha = 0.5) +
+    xlab("\nRun time (hours)") +
+    ylab("Cumulative yield (gbp)\n") +
+    expand_limits(x = 0, y = 0) +
+    scale_x_continuous(expand=c(0,0),breaks = pretty(seq_dt$start_time/3600,n=10)) +
+    scale_y_continuous(expand=c(0,0),breaks = pretty(seq_dt$cumulative_bases,n=10)) +
+    theme_classic() +
+    theme(axis.title = element_text(size = 20),
+        axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
+```
+
+### Demultiplexing
+```{r demultiplex_plot, include=TRUE}
+if ("barcode_arrangement" %in% names(seq_dt)) {
+# it's a run that used the --barcoding flag
+barcode=count(seq_dt$barcode_arrangement)
+barcode=subset(barcode, freq > 150)
+ggplot(barcode, aes(x, freq, fill=x)) +
+    geom_bar(stat="identity", width=0.5) +
+    xlab("\nDemultiplexed barcodes") +
+    ylab("\nFrequency") +
+    scale_color_brewer(palette="Dark2") +
+    scale_y_continuous(expand = c(0,0)) +
+    theme_classic() +
+    theme(axis.text.x = element_text(angle=45, hjust=1, element_text(size=12)),
+    axis.text.y = element_text(size=12))
+}
+```

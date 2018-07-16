@@ -1,4 +1,5 @@
-<p align="center"><img src="images/pq_logo.png" alt="POREquality" width="50%"></p>
+<p align="center"><img src="images/pq_logo.png" alt="POREquality" width="25%"></p>
+
 ## POREquality
 
 This is an early version of POREquality, an R Markdown script designed to run as part of a Nanopore local basecalling pipeline. POREquality reads Nanopore sequencing summary files to generate an aesthetically pleasing HTML report to faciliate the visualization of key metrics.

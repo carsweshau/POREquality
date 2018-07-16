@@ -8,6 +8,9 @@ This is an early version of POREquality, an R Markdown script designed to run as
     * Produce professional sequencing reports after any locally basecalled MinION or GridION run.
     * Visually inspect information contained in the sequencing summary.
     * Sharing sequencing quality control reports with third-parties.
+    * Diagnose problematic or under-performing runs.
+    
+<p align="center"><img src="images/example.png" alt="PORErun" width="25%"></p>
     
 ## Requirements
 

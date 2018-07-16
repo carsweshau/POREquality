@@ -13,7 +13,9 @@ This is an early version of POREquality, an R Markdown script designed to run as
 
 POREquality has currently only been tested on Ubuntu, although provided the dependencies are met it (in theory) should be able to run on other [operating systems](#Future development).
 
-POREquality requires pandoc to be installed, which we recommend you do via your package manager. Furthermore, [currently](#Future development) these R packages are required:
+POREquality requires pandoc to be installed, which we recommend you do via your package manager. 
+
+* __[Currently](#Future development) these R packages are required__:
 
     * data.table
     * flexdashboard
@@ -74,10 +76,11 @@ Alternatively, one could just run the Rscript supplying the required sequencing 
 
 ## Future development
 
+    * Ensure the new re-factored code accepts any ONT sequencing summary gracefully
     * Add PromethION support (physical flowcell layout, ensure compatiable with existing workflows, etc)
     * Simplify installation of POREquality via dependency management like [Packrat](https://rstudio.github.io/packrat/)
     * Add in bream log support for interrogation of drift voltages, etc.
-    * Refactor R code to use fewer packages and embrace data.table to enable key-value/set operations
+    * Refactor R code to use fewer packages and embrace data.table to enable key-value/set operations for performance
     
 ## Contributing
 

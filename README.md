@@ -15,7 +15,7 @@ POREquality has currently only been tested on Ubuntu, although provided the depe
 
 POREquality requires pandoc to be installed, which we recommend you do via your package manager. 
 
-* __[Currently](#Future development) these R packages are required__:
+* __Currently these R packages are required__:
 
     * data.table
     * flexdashboard

@@ -11,7 +11,7 @@ This is an early version of POREquality, an R Markdown script designed to run as
     
 ## Requirements
 
-POREquality has currently only been tested on Ubuntu, although provided the dependencies are met it (in theory) should be able to run on other [operating systems](#Future development).
+POREquality has currently only been tested on Ubuntu, although provided the dependencies are met it (in theory) should be able to run on other operating systems.
 
 POREquality requires pandoc to be installed, which we recommend you do via your package manager. Currently these R packages are required:
 

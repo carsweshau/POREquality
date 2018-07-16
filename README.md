@@ -10,7 +10,7 @@ This is an early version of POREquality, an R Markdown script designed to run as
     * Sharing sequencing quality control reports with third-parties.
     * Diagnose problematic or under-performing runs.
     
-<p align="center"><img src="images/example.png" alt="PORErun" width="25%"></p>
+<p align="center"><img src="images/example.png" alt="PORErun" width="100%"></p>
     
 ## Requirements
 

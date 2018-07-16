@@ -13,19 +13,17 @@ This is an early version of POREquality, an R Markdown script designed to run as
 
 POREquality has currently only been tested on Ubuntu, although provided the dependencies are met it (in theory) should be able to run on other [operating systems](#Future development).
 
-POREquality requires pandoc to be installed, which we recommend you do via your package manager. 
+POREquality requires pandoc to be installed, which we recommend you do via your package manager. Currently these R packages are required:
 
-* __Currently these R packages are required__:
-
-    * data.table
-    * flexdashboard
-    * dplyr
-    * plyr
-    * ggplot2
-    * knitr
-    * optparse
-    * RColorBrewer
-    * reshape2
+   * data.table
+   * flexdashboard
+   * dplyr
+   * plyr
+   * ggplot2
+   * knitr
+   * optparse
+   * RColorBrewer
+   * reshape2
     
 ## Installation
 

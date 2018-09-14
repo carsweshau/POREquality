@@ -73,7 +73,7 @@ parser <- add_option(parser,
                      )
 options=parse_args(parser)
 #input.file=options$input.file
-input.file="~/HCV_M1-5_summary.txt" # <- useful if you want to specify a summary to run manually
+input.file="~/RNAAB111833_summary.txt" # <- useful if you want to specify a summary to run manually
 bream.file=options$bream.file
 output.dir=options$output.dir
 ```
@@ -82,15 +82,12 @@ output.dir=options$output.dir
 seq_dt <- fread(input.file) # faster than optimized read.table call
 seq_dt <- seq_dt[order(seq_dt$start_time),]
 seq_dt$sequence_length_template <- as.numeric(seq_dt$sequence_length_template)
-seq_dt$mean_qscore_template <- as.numeric(seq_dt$mean_qscore_template, na.rm = T)
-seq_dt$start_time <- as.numeric(seq_dt$start_time, na.rm = T)
 seq_dt$cumulative_bases <- cumsum(as.numeric(seq_dt$sequence_length_template))/10^9
-muxes <- seq(from = 0, to = max(as.numeric(seq_dt$start_time) %/% 3600, na.rm = T), by = 8)
+muxes <- seq(from = 0, to = max(as.numeric(seq_dt$start_time) %/% 3600, na.rm=T), by = 8)
 seq_dt[is.na(seq_dt)] <- 0 # sanitizing
 ```
 
 ```{r PromethION_flowcell_layout, include=FALSE}
-#data.frame(channel=, row=rep(), col=rep(seq(96,0,by=-4),each=10))
 # mux_1_phys
 # p1=data.frame(channel=1:250, row=rep(0:9), col=rep(seq(96,0,by=-4),each=10))
 # p2=data.frame(channel=251:500, row=rep(10:19), col=rep(seq(96,0,by=-4),each=10))
@@ -157,13 +154,13 @@ seq_dt[is.na(seq_dt)] <- 0 # sanitizing
 # https://gist.github.com/roblanf/df47b9748c3aae00809cc675aca79989
 # build the map for R9.5 flowcell, as a long-form dataframe that translates
 # channels into rows and columns on the flowcell. Good for plotting in R.
-p1 = data.frame(channel=33:64, row=rep(1:4, each=8), col=rep(1:8, 4))
+p1 = data.frame(channel=33:64, row=rep(1:4, each=8), col=rep(1:8, 4)) 
 p2 = data.frame(channel=481:512, row=rep(5:8, each=8), col=rep(1:8, 4))
 p3 = data.frame(channel=417:448, row=rep(9:12, each=8), col=rep(1:8, 4))
 p4 = data.frame(channel=353:384, row=rep(13:16, each=8), col=rep(1:8, 4))
 p5 = data.frame(channel=289:320, row=rep(17:20, each=8), col=rep(1:8, 4))
 p6 = data.frame(channel=225:256, row=rep(21:24, each=8), col=rep(1:8, 4))
-p7 = data.frame(channel=161:192, row=rep(25:28, each=8), col=rep(1:8, 4))
+p7 = data.frame(channel=161:192, row=rep(25:28, each=8), col=rep(1:8, 4)) 
 p8 = data.frame(channel=97:128, row=rep(29:32, each=8), col=rep(1:8, 4))
 
 q1 = data.frame(channel=1:32, row=rep(1:4, each=8), col=rep(16:9, 4))
@@ -175,7 +172,7 @@ q6 = data.frame(channel=193:224, row=rep(21:24, each=8), col=rep(16:9, 4))
 q7 = data.frame(channel=129:160, row=rep(25:28, each=8), col=rep(16:9, 4))
 q8 = data.frame(channel=65:96, row=rep(29:32, each=8), col=rep(16:9, 4))
 
-# long form as a data frame, i.e. map$channel[[1]] returns 33
+# long form as a data frame, i.e. map$channel[[1]] returns 33 
 map = rbind(p1, p2, p3, p4, p5, p6, p7, p8, q1, q2, q3, q4, q5, q6, q7, q8)
 ```
 
@@ -196,7 +193,7 @@ mean.length = round(mean(as.numeric(seq_dt$sequence_length_template)), digits = 
 median.length = round(median(as.numeric(seq_dt$sequence_length_template)), digits = 1)
 max.length = max(as.numeric(seq_dt$sequence_length_template))
 max.pass.length = max(as.numeric(pass_df$sequence_length_template))
-mean.q = round(mean(seq_dt$mean_qscore_template), digits = 1)
+mean.q = round(mean(as.numeric(seq_dt$mean_qscore_template)), digits = 1)
 median.q = round(median(seq_dt$mean_qscore_template), digits = 1)
 active.channels = length(unique(seq_dt$channel))
 #flowcell.quality = (active.channels / 512)*100
@@ -217,7 +214,7 @@ valueBox(round(total.reads/10^6,2),
          icon="fa-area-chart")
 ```
 
-### N50
+### N50 (bp)
 
 ```{r, include=TRUE}
 valueBox(round(N50.read,2),
@@ -264,7 +261,7 @@ valueBox(round(run.length,2),
 ### Active channels
 
 ```{r, include=TRUE}
-flowcell.quality <- round((active.channels / 512)*100,0)
+flowcell.quality <- round((active.channels / 3000)*100,0)
 gauge(flowcell.quality,min=0,max=100,symbol='%',gaugeSectors(success=c(95,100),warning=c(80,94),danger=c(0,79)))
 ```
 
@@ -280,23 +277,23 @@ rst <- as.data.frame(table(unlist(s)))
 colnames(rst)[1] <- "channel"
 #flowcell <- matrix(rst, nrow=30, ncol=25)
 
-for (i in 1:512){ # need to change this to be platform agnostic
+for (i in 1:3000){ # need to change this to be platform agnostic
     if (!i %in% s$channel){
         new.row <- data.frame(channel=i, stringsAsFactors = F)
         rst <- rbind.fill(rst, new.row)
     }
 }
 rst[is.na(rst)] <- 0
-rst <- rst[order(as.numeric(rst$channel),method = "radix"),]
-map <- map[order(as.numeric(map$channel),method = "radix"),]
+rst <- rst[order(as.numeric(rst$channel)),]
+map <- map[order(as.numeric(map$channel)),]
 map <- cbind(map, data.frame(frequency=0, stringsAsFactors = F))
 # cbind Freq to map, then use that to plot
-for (i in 1:512){ # promethion change
+for (i in 1:3000){ # promethion change
     map[i,]$frequency <- rst[i,]$Freq
 }
 
 # matrix form, so it looks like the flowcell
-map.matrix = acast(map, col ~ row, value.var = "frequency")
+map.matrix = acast(map, row ~ col, value.var = "frequency")
 ```
 
 ```{r channel_plot, include=TRUE}
@@ -324,13 +321,13 @@ bnum=subset(seq_dt, sequence_length_template > 0)
 ```
 ```{r read_len_plot, include=TRUE}
 ggplot(bnum, aes(x=sequence_length_template)) +
-    geom_histogram(bins=200,colour=hm.palette(9)[8], fill=hm.palette(9)[4]) +
+    geom_histogram(bins=30,binwidth = 1,colour=hm.palette(9)[8], fill=hm.palette(9)[4]) +
     scale_y_continuous(expand=c(0,0)) +
-    scale_x_continuous(limits=c(0,mean.length*5), breaks=pretty(bnum$sequence_length_template,n=40)) + #need to fix this to actually be dynamic and not empty for PromethION runs
+    scale_x_continuous(limits=c(0,mean.length*5),breaks=scales::pretty_breaks(n=10)) + #mean.length*5), breaks=pretty(bnum$sequence_length_template,n=40)) + # pretty(bnum$sequence_length_template,n=40) need to fix this to actually be dynamic and not empty for PromethION runs
     xlab("Read length\n") +
     ylab("Number of reads\n") +
-    geom_vline(xintercept = N50.length, size = 1) +
-    geom_text(aes(x=N50.length, label="N50", y=+Inf),vjust=+1,hjust=-.4) +
+    geom_vline(xintercept = N50.read, size = 1) +
+    geom_text(aes(x=N50.read, label="N50", y=+Inf),vjust=+1,hjust=-.4) +
     geom_vline(xintercept = mean.length, size = 1) +
     geom_text(aes(x=mean.length, label="Mean", y=+Inf),vjust=+1,hjust=-.4) +
     theme_classic() + theme(axis.title = element_text(size=20),
@@ -343,7 +340,7 @@ ggplot(bnum, aes(x=sequence_length_template)) +
 ```{r readqual, include=TRUE}
 ggplot(seq_dt, aes(x=mean_qscore_template)) +
     geom_histogram(bins=max(seq_dt$mean_qscore_template),binwidth=1, colour=hm.palette(9)[8], fill=hm.palette(9)[4]) +
-    scale_x_continuous(breaks=0:max(seq_dt$mean_qscore_template)) +
+    scale_x_continuous(limits=c(0,max(seq_dt$mean_qscore_template)),breaks=seq(0,max(seq_dt$mean_qscore_template))) +
     scale_y_continuous(expand=c(0,0)) +
     xlab("\nMean quality of reads") +
     ylab("Number of reads\n") +
@@ -410,7 +407,7 @@ ggplot(data=death_df,aes(x=death_df$time_hours,y=death_df$active_sensors)) +
     geom_vline(xintercept = muxes, colour = 'black', linetype = 'dashed', alpha = 0.5) +
     scale_x_continuous(expand=c(0,0),breaks = pretty(death_df$time_hours,n=10)) +
     scale_y_continuous(expand=c(0,0),breaks = pretty(death_df$active_sensors,n=10)) +
-    coord_cartesian(ylim = c(0, 512)) +
+    coord_cartesian(ylim = c(0, 3000)) +
     theme_classic() +
     theme(axis.title = element_text(size = 20),axis.text.x = element_text(size=12),
         axis.text.y = element_text(size=12)) +
@@ -444,15 +441,14 @@ if ("barcode_arrangement" %in% names(seq_dt)) {
 # it's a run that used the --barcoding flag
 barcode=count(seq_dt$barcode_arrangement)
 barcode=subset(barcode, freq > 150)
-barcode=subset(barcode, freq < 500000)
 ggplot(barcode, aes(x, freq, fill=x)) +
     geom_bar(stat="identity", width=0.5) +
     xlab("\nDemultiplexed barcodes") +
     ylab("\nFrequency") +
     scale_color_brewer(palette="Dark2") +
     scale_y_continuous(expand = c(0,0)) +
-    theme_classic() + 
-    theme(axis.text.x = element_text(angle=90, hjust=1, element_text(size=12)),
+    theme_classic() +
+    theme(axis.text.x = element_text(angle=45, hjust=1, element_text(size=12)),
     axis.text.y = element_text(size=12))
 }
 ```

@@ -12,6 +12,7 @@ library(data.table) # used for fread, optimize reading sequencing summaries
 library(flexdashboard) # used for dashboard output
 library(dplyr) # data frame manipulation, these libraries should not be loaded in this order!
 library(plyr) # purely for rbind.fill, should replace with bind_rows
+library(ggExtra) # extends ggplot functions, used for ggMarginal
 library(ggplot2) # main plotting functions
 library(knitr) # creates .html output
 library(optparse) # used to run .Rmd script from command line
@@ -73,7 +74,7 @@ parser <- add_option(parser,
                      )
 options=parse_args(parser)
 input.file=options$input.file
-#input.file="~/RNAAB111833_summary.txt" # <- useful if you want to specify a summary to run manually
+# input.file="~/LXAAB112193_summary.txt" # <- useful if you want to specify a summary to run manually
 bream.file=options$bream.file
 output.dir=options$output.dir
 ```
@@ -89,91 +90,138 @@ seq_dt[is.na(seq_dt)] <- 0 # sanitizing
 
 ```{r PromethION_flowcell_layout, include=FALSE}
 # mux_1_phys
-# p1=data.frame(channel=1:250, row=rep(0:9), col=rep(seq(96,0,by=-4),each=10))
-# p2=data.frame(channel=251:500, row=rep(10:19), col=rep(seq(96,0,by=-4),each=10))
-# p3=data.frame(channel=501:750, row=rep(20:29), col=rep(seq(96,0,by=-4),each=10))
-# p4=data.frame(channel=751:1000, row=rep(32:41), col=rep(seq(96,0,by=-4),each=10))
-# p5=data.frame(channel=1001:1250, row=rep(42:51), col=rep(seq(96,0,by=-4),each=10))
-# p6=data.frame(channel=1251:1500, row=rep(52:61), col=rep(seq(96,0,by=-4),each=10))
-# p7=data.frame(channel=1501:1750, row=rep(64:73), col=rep(seq(96,0,by=-4),each=10))
-# p8=data.frame(channel=1751:2000, row=rep(74:83), col=rep(seq(96,0,by=-4),each=10))
-# p9=data.frame(channel=2001:2250, row=rep(84:93), col=rep(seq(96,0,by=-4),each=10))
-# p10=data.frame(channel=2251:2500, row=rep(96:105), col=rep(seq(96,0,by=-4),each=10))
-# p11=data.frame(channel=2501:2750, row=rep(106:115), col=rep(seq(96,0,by=-4),each=10))
-# p12=data.frame(channel=2751:3000, row=rep(116:125), col=rep(seq(96,0,by=-4),each=10))
-# 
-# # mux_2_phys
-# q1=data.frame(channel=1:250, row=rep(0:9), col=rep(seq(97,0,by=-4),each=10))
-# q2=data.frame(channel=251:500, row=rep(10:19), col=rep(seq(97,0,by=-4),each=10))
-# q3=data.frame(channel=501:750, row=rep(20:29), col=rep(seq(97,0,by=-4),each=10))
-# q4=data.frame(channel=751:1000, row=rep(32:41), col=rep(seq(97,0,by=-4),each=10))
-# q5=data.frame(channel=1001:1250, row=rep(42:51), col=rep(seq(97,0,by=-4),each=10))
-# q6=data.frame(channel=1251:1500, row=rep(52:61), col=rep(seq(97,0,by=-4),each=10))
-# q7=data.frame(channel=1501:1750, row=rep(64:73), col=rep(seq(97,0,by=-4),each=10))
-# q8=data.frame(channel=1751:2000, row=rep(74:83), col=rep(seq(97,0,by=-4),each=10))
-# q9=data.frame(channel=2001:2250, row=rep(84:93), col=rep(seq(97,0,by=-4),each=10))
-# q10=data.frame(channel=2251:2500, row=rep(96:105), col=rep(seq(97,0,by=-4),each=10))
-# q11=data.frame(channel=2501:2750, row=rep(106:115), col=rep(seq(97,0,by=-4),each=10))
-# q12=data.frame(channel=2751:3000, row=rep(116:125), col=rep(seq(97,0,by=-4),each=10))
-# 
-# # mux_3_phys
-# r1=data.frame(channel=1:250, row=rep(0:9), col=rep(seq(98,0,by=-4),each=10))
-# r2=data.frame(channel=251:500, row=rep(10:19), col=rep(seq(98,0,by=-4),each=10))
-# r3=data.frame(channel=501:750, row=rep(20:29), col=rep(seq(98,0,by=-4),each=10))
-# r4=data.frame(channel=751:1000, row=rep(32:41), col=rep(seq(98,0,by=-4),each=10))
-# r5=data.frame(channel=1001:1250, row=rep(42:51), col=rep(seq(98,0,by=-4),each=10))
-# r6=data.frame(channel=1251:1500, row=rep(52:61), col=rep(seq(98,0,by=-4),each=10))
-# r7=data.frame(channel=1501:1750, row=rep(64:73), col=rep(seq(98,0,by=-4),each=10))
-# r8=data.frame(channel=1751:2000, row=rep(74:83), col=rep(seq(98,0,by=-4),each=10))
-# r9=data.frame(channel=2001:2250, row=rep(84:93), col=rep(seq(98,0,by=-4),each=10))
-# r10=data.frame(channel=2251:2500, row=rep(96:105), col=rep(seq(98,0,by=-4),each=10))
-# r11=data.frame(channel=2501:2750, row=rep(106:115), col=rep(seq(98,0,by=-4),each=10))
-# r12=data.frame(channel=2751:3000, row=rep(116:125), col=rep(seq(98,0,by=-4),each=10))
-# 
-# # mux_4_phys
-# s1=data.frame(channel=1:250, row=rep(0:9), col=rep(seq(99,0,by=-4),each=10))
-# s2=data.frame(channel=251:500, row=rep(10:19), col=rep(seq(99,0,by=-4),each=10))
-# s3=data.frame(channel=501:750, row=rep(20:29), col=rep(seq(99,0,by=-4),each=10))
-# s4=data.frame(channel=751:1000, row=rep(32:41), col=rep(seq(99,by=-4),each=10))
-# s5=data.frame(channel=1001:1250, row=rep(42:51), col=rep(seq(99,0,by=-4),each=10))
-# s6=data.frame(channel=1251:1500, row=rep(52:61), col=rep(seq(99,0,by=-4),each=10))
-# s7=data.frame(channel=1501:1750, row=rep(64:73), col=rep(seq(99,0,by=-4),each=10))
-# s8=data.frame(channel=1751:2000, row=rep(74:83), col=rep(seq(99,0,by=-4),each=10))
-# s9=data.frame(channel=2001:2250, row=rep(84:93), col=rep(seq(99,0,by=-4),each=10))
-# s10=data.frame(channel=2251:2500, row=rep(96:105), col=rep(seq(99,0,by=-4),each=10))
-# s11=data.frame(channel=2501:2750, row=rep(106:115), col=rep(seq(99,0,by=-4),each=10))
-# s12=data.frame(channel=2751:3000, row=rep(116:125), col=rep(seq(99,0,by=-4),each=10))
-# 
-# map = rbind(p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,
-#             q1,q2,q3,q4,q5,q6,q7,q8,q9,q10,q11,q12) #,
-#             # r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,
-#             # s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11,s12)
+p1=data.frame(channel=1:250, row=rep(0:9), col=rep(seq(96,0,by=-4),each=10))
+p2=data.frame(channel=251:500, row=rep(10:19),
+col=rep(seq(96,0,by=-4),each=10)) 
+p3=data.frame(channel=501:750,
+row=rep(20:29), col=rep(seq(96,0,by=-4),each=10))
+p4=data.frame(channel=751:1000, row=rep(32:41),
+col=rep(seq(96,0,by=-4),each=10)) 
+p5=data.frame(channel=1001:1250,
+row=rep(42:51), col=rep(seq(96,0,by=-4),each=10))
+p6=data.frame(channel=1251:1500, row=rep(52:61),
+col=rep(seq(96,0,by=-4),each=10)) 
+p7=data.frame(channel=1501:1750,
+row=rep(64:73), col=rep(seq(96,0,by=-4),each=10))
+p8=data.frame(channel=1751:2000, row=rep(74:83),
+col=rep(seq(96,0,by=-4),each=10)) 
+p9=data.frame(channel=2001:2250,
+row=rep(84:93), col=rep(seq(96,0,by=-4),each=10))
+p10=data.frame(channel=2251:2500, row=rep(96:105),
+col=rep(seq(96,0,by=-4),each=10)) 
+p11=data.frame(channel=2501:2750,
+row=rep(106:115), col=rep(seq(96,0,by=-4),each=10))
+p12=data.frame(channel=2751:3000, row=rep(116:125),
+col=rep(seq(96,0,by=-4),each=10))
+
+# mux_2_phys 
+q1=data.frame(channel=1:250, row=rep(0:9),
+col=rep(seq(97,0,by=-4),each=10)) 
+q2=data.frame(channel=251:500,
+row=rep(10:19), col=rep(seq(97,0,by=-4),each=10))
+q3=data.frame(channel=501:750, row=rep(20:29),
+col=rep(seq(97,0,by=-4),each=10)) 
+q4=data.frame(channel=751:1000,
+row=rep(32:41), col=rep(seq(97,0,by=-4),each=10))
+q5=data.frame(channel=1001:1250, row=rep(42:51),
+col=rep(seq(97,0,by=-4),each=10)) 
+q6=data.frame(channel=1251:1500,
+row=rep(52:61), col=rep(seq(97,0,by=-4),each=10))
+q7=data.frame(channel=1501:1750, row=rep(64:73),
+col=rep(seq(97,0,by=-4),each=10)) 
+q8=data.frame(channel=1751:2000,
+row=rep(74:83), col=rep(seq(97,0,by=-4),each=10))
+q9=data.frame(channel=2001:2250, row=rep(84:93),
+col=rep(seq(97,0,by=-4),each=10)) 
+q10=data.frame(channel=2251:2500,
+row=rep(96:105), col=rep(seq(97,0,by=-4),each=10))
+q11=data.frame(channel=2501:2750, row=rep(106:115),
+col=rep(seq(97,0,by=-4),each=10)) 
+q12=data.frame(channel=2751:3000,
+row=rep(116:125), col=rep(seq(97,0,by=-4),each=10))
+
+# mux_3_phys 
+r1=data.frame(channel=1:250, row=rep(0:9),
+col=rep(seq(98,0,by=-4),each=10)) 
+r2=data.frame(channel=251:500,
+row=rep(10:19), col=rep(seq(98,0,by=-4),each=10))
+r3=data.frame(channel=501:750, row=rep(20:29),
+col=rep(seq(98,0,by=-4),each=10)) 
+r4=data.frame(channel=751:1000,
+row=rep(32:41), col=rep(seq(98,0,by=-4),each=10))
+r5=data.frame(channel=1001:1250, row=rep(42:51),
+col=rep(seq(98,0,by=-4),each=10)) 
+r6=data.frame(channel=1251:1500,
+row=rep(52:61), col=rep(seq(98,0,by=-4),each=10))
+r7=data.frame(channel=1501:1750, row=rep(64:73),
+col=rep(seq(98,0,by=-4),each=10)) 
+r8=data.frame(channel=1751:2000,
+row=rep(74:83), col=rep(seq(98,0,by=-4),each=10))
+r9=data.frame(channel=2001:2250, row=rep(84:93),
+col=rep(seq(98,0,by=-4),each=10)) 
+r10=data.frame(channel=2251:2500,
+row=rep(96:105), col=rep(seq(98,0,by=-4),each=10))
+r11=data.frame(channel=2501:2750, row=rep(106:115),
+col=rep(seq(98,0,by=-4),each=10)) 
+r12=data.frame(channel=2751:3000,
+row=rep(116:125), col=rep(seq(98,0,by=-4),each=10))
+
+# mux_4_phys 
+s1=data.frame(channel=1:250, row=rep(0:9),
+col=rep(seq(99,0,by=-4),each=10)) 
+s2=data.frame(channel=251:500,
+row=rep(10:19), col=rep(seq(99,0,by=-4),each=10))
+s3=data.frame(channel=501:750, row=rep(20:29),
+col=rep(seq(99,0,by=-4),each=10)) 
+s4=data.frame(channel=751:1000,
+row=rep(32:41), col=rep(seq(99,by=-4),each=10))
+s5=data.frame(channel=1001:1250, row=rep(42:51),
+col=rep(seq(99,0,by=-4),each=10)) 
+s6=data.frame(channel=1251:1500,
+row=rep(52:61), col=rep(seq(99,0,by=-4),each=10))
+s7=data.frame(channel=1501:1750, row=rep(64:73),
+col=rep(seq(99,0,by=-4),each=10)) 
+s8=data.frame(channel=1751:2000,
+row=rep(74:83), col=rep(seq(99,0,by=-4),each=10))
+s9=data.frame(channel=2001:2250, row=rep(84:93),
+col=rep(seq(99,0,by=-4),each=10)) 
+s10=data.frame(channel=2251:2500,
+row=rep(96:105), col=rep(seq(99,0,by=-4),each=10))
+s11=data.frame(channel=2501:2750, row=rep(106:115),
+col=rep(seq(99,0,by=-4),each=10)) 
+s12=data.frame(channel=2751:3000,
+row=rep(116:125), col=rep(seq(99,0,by=-4),each=10))
+
+map = rbind(p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12)#,
+            # q1,q2,q3,q4,q5,q6,q7,q8,q9,q10,q11,q12,
+            # r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,
+            # s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11,s12)
 ```
 
 ```{r GridION_flowcell_layout, include=FALSE}
 # https://gist.github.com/roblanf/df47b9748c3aae00809cc675aca79989
 # build the map for R9.5 flowcell, as a long-form dataframe that translates
 # channels into rows and columns on the flowcell. Good for plotting in R.
-p1 = data.frame(channel=33:64, row=rep(1:4, each=8), col=rep(1:8, 4)) 
-p2 = data.frame(channel=481:512, row=rep(5:8, each=8), col=rep(1:8, 4))
-p3 = data.frame(channel=417:448, row=rep(9:12, each=8), col=rep(1:8, 4))
-p4 = data.frame(channel=353:384, row=rep(13:16, each=8), col=rep(1:8, 4))
-p5 = data.frame(channel=289:320, row=rep(17:20, each=8), col=rep(1:8, 4))
-p6 = data.frame(channel=225:256, row=rep(21:24, each=8), col=rep(1:8, 4))
-p7 = data.frame(channel=161:192, row=rep(25:28, each=8), col=rep(1:8, 4)) 
-p8 = data.frame(channel=97:128, row=rep(29:32, each=8), col=rep(1:8, 4))
-
-q1 = data.frame(channel=1:32, row=rep(1:4, each=8), col=rep(16:9, 4))
-q2 = data.frame(channel=449:480, row=rep(5:8, each=8), col=rep(16:9, 4))
-q3 = data.frame(channel=385:416, row=rep(9:12, each=8), col=rep(16:9, 4))
-q4 = data.frame(channel=321:352, row=rep(13:16, each=8), col=rep(16:9, 4))
-q5 = data.frame(channel=257:288, row=rep(17:20, each=8), col=rep(16:9, 4))
-q6 = data.frame(channel=193:224, row=rep(21:24, each=8), col=rep(16:9, 4))
-q7 = data.frame(channel=129:160, row=rep(25:28, each=8), col=rep(16:9, 4))
-q8 = data.frame(channel=65:96, row=rep(29:32, each=8), col=rep(16:9, 4))
-
-# long form as a data frame, i.e. map$channel[[1]] returns 33 
-map = rbind(p1, p2, p3, p4, p5, p6, p7, p8, q1, q2, q3, q4, q5, q6, q7, q8)
+# p1 = data.frame(channel=33:64, row=rep(1:4, each=8), col=rep(1:8, 4)) 
+# p2 = data.frame(channel=481:512, row=rep(5:8, each=8), col=rep(1:8, 4))
+# p3 = data.frame(channel=417:448, row=rep(9:12, each=8), col=rep(1:8, 4))
+# p4 = data.frame(channel=353:384, row=rep(13:16, each=8), col=rep(1:8, 4))
+# p5 = data.frame(channel=289:320, row=rep(17:20, each=8), col=rep(1:8, 4))
+# p6 = data.frame(channel=225:256, row=rep(21:24, each=8), col=rep(1:8, 4))
+# p7 = data.frame(channel=161:192, row=rep(25:28, each=8), col=rep(1:8, 4)) 
+# p8 = data.frame(channel=97:128, row=rep(29:32, each=8), col=rep(1:8, 4))
+# 
+# q1 = data.frame(channel=1:32, row=rep(1:4, each=8), col=rep(16:9, 4))
+# q2 = data.frame(channel=449:480, row=rep(5:8, each=8), col=rep(16:9, 4))
+# q3 = data.frame(channel=385:416, row=rep(9:12, each=8), col=rep(16:9, 4))
+# q4 = data.frame(channel=321:352, row=rep(13:16, each=8), col=rep(16:9, 4))
+# q5 = data.frame(channel=257:288, row=rep(17:20, each=8), col=rep(16:9, 4))
+# q6 = data.frame(channel=193:224, row=rep(21:24, each=8), col=rep(16:9, 4))
+# q7 = data.frame(channel=129:160, row=rep(25:28, each=8), col=rep(16:9, 4))
+# q8 = data.frame(channel=65:96, row=rep(29:32, each=8), col=rep(16:9, 4))
+# 
+# # long form as a data frame, i.e. map$channel[[1]] returns 33 
+# map = rbind(p1, p2, p3, p4, p5, p6, p7, p8, q1, q2, q3, q4, q5, q6, q7, q8)
 ```
 
 Rows {data-width=250}
@@ -271,7 +319,7 @@ Row {.tabset .tabset-fade}
 ### Reads per sensor
 
 ```{r channel_activity}
-#seq_dt <- seq_dt[sample(.N,1000000)] # Subsampling for PromethION runs
+seq_dt <- seq_dt[sample(.N,1000000)] # Subsampling for PromethION runs
 s <- seq_dt[, list(channel)]
 rst <- as.data.frame(table(unlist(s)))
 colnames(rst)[1] <- "channel"
@@ -299,7 +347,7 @@ map.matrix = acast(map, row ~ col, value.var = "frequency")
 ```{r channel_plot, include=TRUE}
 ggplot(map, aes(x = row, y = col, fill = frequency)) +
     geom_tile() +
-    geom_text(data=map,aes(x=row, y=col,label=frequency,color=frequency),show.legend = F) +
+    #geom_text(data=map,aes(x=row, y=col,label=frequency,color=frequency),show.legend = F) +
     scale_x_discrete(breaks=NULL) +
     scale_y_discrete(breaks=NULL) +
     coord_equal() +
@@ -374,7 +422,7 @@ commonTheme = list(labs(color="Density",fill="Density",
                         y="Mean Read Quality Score\n"),
                    theme_classic())
 
-ggplot(seq_dt, aes(x=seq_dt$sequence_length_template,y=seq_dt$mean_qscore_template)) +
+p <- ggplot(seq_dt, aes(x=seq_dt$sequence_length_template,y=seq_dt$mean_qscore_template)) +
     stat_density2d(aes(fill=..level..),geom='polygon') +
     scale_fill_gradientn(colors = rev(dv.palette(100))) +
     scale_x_log10(expand=c(0,0),minor_breaks=log10_minor_break()) +
@@ -385,6 +433,7 @@ ggplot(seq_dt, aes(x=seq_dt$sequence_length_template,y=seq_dt$mean_qscore_templa
         panel.grid.minor = element_blank(),
         axis.text.x = element_text(size=12),
         axis.text.y = element_text(size=12))
+ggMarginal(p, type="density")
 ```
 
 ### Pore activity

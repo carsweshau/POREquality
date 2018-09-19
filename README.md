@@ -11,6 +11,7 @@ This is an early version of POREquality, an R Markdown script designed to run as
     * Diagnose problematic or under-performing runs.
     
 <p align="center"><img src="images/example.png" alt="PORErun" width="100%"></p>
+<p align="center"><img src="images/example1.png" alt="Read quality versus log read length" width="100%"></p>
     
 ## Requirements
 
@@ -20,6 +21,7 @@ POREquality has currently only been tested on Ubuntu, although provided the depe
    * flexdashboard
    * dplyr
    * plyr
+   * ggExtra
    * ggplot2
    * knitr
    * optparse
@@ -31,7 +33,7 @@ POREquality has currently only been tested on Ubuntu, although provided the depe
 ### Required R packages
 
 ```r
-required.packages <- c("data.table","flexdashboard","dplyr","plyr","ggplot2","knitr","optparse","RColorBrewer","reshape2")
+required.packages <- c("data.table","flexdashboard","dplyr","plyr","ggExtra","ggplot2","knitr","optparse","RColorBrewer","reshape2")
 new.packages <- required.packages[!(required.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 ```

@@ -11,6 +11,7 @@ This is an early version of POREquality, an R Markdown script designed to run as
     * Diagnose problematic or under-performing runs.
     
 <p align="center"><img src="images/example.png" alt="PORErun" width="100%"></p>
+<p align="center"><img src="images/example1.png" alt="Read quality versus log read length" width="100%"></p>
     
 ## Requirements
 

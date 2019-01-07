@@ -73,7 +73,7 @@ parser <- add_option(parser,
                      )
 options=parse_args(parser)
 #input.file=options$input.file
-input.file="~/HCV_M1-5_summary.txt" # <- useful if you want to specify a summary to run manually
+input.file="~/NLAAA149189_summary.txt" # <- useful if you want to specify a summary to run manually
 bream.file=options$bream.file
 output.dir=options$output.dir
 ```
@@ -217,7 +217,7 @@ valueBox(round(total.reads/10^6,2),
          icon="fa-area-chart")
 ```
 
-### N50
+### N50 (bp)
 
 ```{r, include=TRUE}
 valueBox(round(N50.read,2),
@@ -317,25 +317,66 @@ ggplot(map, aes(x = row, y = col, fill = frequency)) +
         legend.key.width=unit(5.6,"cm"))
 ```
 
+<!-- ### Sorted reads per pore -->
+
+<!-- ```{r read_per_pore} -->
+<!-- srst <- rst[rev(order(rst$Freq)),] -->
+<!-- ctime <- select(seq_dt, channel, start_time) -->
+<!-- ``` -->
+
+<!-- ```{r read_per_pore_plot, include=TRUE} -->
+<!-- ggplot(srst, aes(x=channel,y=Freq)) + geom_histogram(stat="identity") + theme_classic() + theme(axis.title = element_text(size=20), -->
+<!--   axis.text.x = element_text(angle=45, hjust=1, size=12), -->
+<!--   axis.text.y = element_text(size=12)) -->
+<!-- ``` -->
+
 ### Read length distribution
 
 ```{r read_len}
 bnum=subset(seq_dt, sequence_length_template > 0)
 ```
 ```{r read_len_plot, include=TRUE}
+## Old-porequality style (still good for medium yield, GridION runs)
 ggplot(bnum, aes(x=sequence_length_template)) +
-    geom_histogram(bins=200,colour=hm.palette(9)[8], fill=hm.palette(9)[4]) +
-    scale_y_continuous(expand=c(0,0)) +
-    scale_x_continuous(limits=c(0,mean.length*5), breaks=pretty(bnum$sequence_length_template,n=40)) + #need to fix this to actually be dynamic and not empty for PromethION runs
-    xlab("Read length\n") +
-    ylab("Number of reads\n") +
-    geom_vline(xintercept = N50.length, size = 1) +
-    geom_text(aes(x=N50.length, label="N50", y=+Inf),vjust=+1,hjust=-.4) +
-    geom_vline(xintercept = mean.length, size = 1) +
-    geom_text(aes(x=mean.length, label="Mean", y=+Inf),vjust=+1,hjust=-.4) +
-    theme_classic() + theme(axis.title = element_text(size=20),
-        axis.text.x = element_text(angle=45, hjust=1, size=12),
-        axis.text.y = element_text(size=12))
+  geom_histogram(bins=200,colour=hm.palette(9)[8], fill=hm.palette(9)[4]) +
+  #geom_histogram(aes(y=..density..), colour="#2171b5", fill="#c6dbef",alpha=0.2) +
+  #geom_density(alpha=1, colour="#2171b5", fill="#c6dbef") +
+  #stat_density(geom="line") +
+  #scale_x_log10(expand=c(0,0),minor_breaks=log10_minor_break()) +
+  scale_y_continuous(expand=c(0,0)) +
+  #xlab("\nLog Read length") +
+  scale_x_continuous(limits=c(0,mean.length*4),breaks=pretty(bnum$sequence_length_template,n=40)) +
+  xlab("Read length\n") +
+  ylab("Number of reads\n") +
+  geom_vline(xintercept = N50.read, size = 1) +
+  geom_text(aes(x=N50.read, label="N50", y=+Inf),vjust=+1,hjust=-.4) +
+  # geom_vline(xintercept = N50.read, size = 1) +
+  # geom_text(aes(x=N50.read, label="L50", y=+Inf),vjust=+1,hjust=-.4) +
+  geom_vline(xintercept = mean.length, size = 1) +
+  #geom_text(aes(x=mean.length, label="Mean", y=+Inf),vjust=+1,hjust=-.4) +
+  #geom_vline(xintercept = median.length, size = 1) +
+  geom_text(aes(x=mean.length, label="Mean", y=+Inf),vjust=+1,hjust=-.4) +
+  theme_classic() + theme(axis.title = element_text(size=20),
+  axis.text.x = element_text(angle=45, hjust=1, size=12),
+  axis.text.y = element_text(size=12),
+  #panel.border = element_blank(),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank())
+
+## Newer style
+# ggplot(bnum, aes(x=sequence_length_template)) +
+#     geom_histogram(bins=200,colour=hm.palette(9)[8], fill=hm.palette(9)[4]) +
+#     scale_y_continuous(expand=c(0,0)) +
+#     scale_x_continuous(limits=c(0,mean.length*5), breaks=pretty(bnum$sequence_length_template,n=40)) + #need to fix this to actually be dynamic and not empty for PromethION runs
+#     xlab("Read length\n") +
+#     ylab("Number of reads\n") +
+#     geom_vline(xintercept = N50.length, size = 1) +
+#     geom_text(aes(x=N50.length, label="N50", y=+Inf),vjust=+1,hjust=-.4) +
+#     geom_vline(xintercept = mean.length, size = 1) +
+#     geom_text(aes(x=mean.length, label="Mean", y=+Inf),vjust=+1,hjust=-.4) +
+#     theme_classic() + theme(axis.title = element_text(size=20),
+#         axis.text.x = element_text(angle=45, hjust=1, size=12),
+#         axis.text.y = element_text(size=12))
 ```
 
 ### Mean quality distribution per read
@@ -443,16 +484,17 @@ ggplot(data=seq_dt,aes(x=seq_dt$start_time / 3600)) +
 if ("barcode_arrangement" %in% names(seq_dt)) {
 # it's a run that used the --barcoding flag
 barcode=count(seq_dt$barcode_arrangement)
-barcode=subset(barcode, freq > 150)
-barcode=subset(barcode, freq < 500000)
+#barcode=subset(barcode, freq > 150)
+#barcode=subset(barcode, freq < 500000)
+#low_bc=subset(barcode, freq < 1000)
 ggplot(barcode, aes(x, freq, fill=x)) +
     geom_bar(stat="identity", width=0.5) +
     xlab("\nDemultiplexed barcodes") +
     ylab("\nFrequency") +
     scale_color_brewer(palette="Dark2") +
     scale_y_continuous(expand = c(0,0)) +
-    theme_classic() + 
-    theme(axis.text.x = element_text(angle=90, hjust=1, element_text(size=12)),
+    theme_classic() + scale_y_log10(expand=c(0,0),minor_breaks=log10_minor_break()) +
+    theme(axis.text.x = element_text(angle=90, element_text(size=12)),
     axis.text.y = element_text(size=12))
 }
 ```

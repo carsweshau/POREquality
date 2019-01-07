@@ -1,3 +1,6 @@
 # Ignore test output
 *.html
+*.pdf
+*.png
 .Rhistory
+images/

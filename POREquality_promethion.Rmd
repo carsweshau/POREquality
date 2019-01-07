@@ -1,14 +1,19 @@
 ---
-title: "A POREquality report"
+title: "BC12" #"A POREquality report"
 output: 
   flexdashboard::flex_dashboard:
     theme: bootstrap
     orientation: columns
     vertical_layout: fill
+    pandoc_args: [
+    "+RTS","-K64m",
+    "-RTS"
+    ]
 ---
 
 ```{r presetup, include=FALSE}
 library(data.table) # used for fread, optimize reading sequencing summaries
+#library(ff) # used for extremely large sequencing summary files (Upper limit should be 10Gb for struc, we have >18Gb...)
 library(flexdashboard) # used for dashboard output
 library(dplyr) # data frame manipulation, these libraries should not be loaded in this order!
 library(plyr) # purely for rbind.fill, should replace with bind_rows
@@ -18,6 +23,7 @@ library(knitr) # creates .html output
 library(optparse) # used to run .Rmd script from command line
 library(RColorBrewer) # not strictly needed, but using for particular colours
 library(reshape2) # used for acast
+library(scales) # used for log_trans
 
 options(scipen=999)
 options(digits=2)
@@ -26,10 +32,34 @@ dv.palette <- colorRampPalette(brewer.pal(9, 'Spectral'),space='Lab')
 ```
 
 ```{r global_options, include=FALSE}
-opts_chunk$set(fig.width=12, fig.height=8, include=FALSE, echo=FALSE, warning=FALSE, message=FALSE)
+opts_chunk$set(fig.width=12, fig.height=8, fig.path='images/', include=FALSE, echo=FALSE, warning=FALSE, message=FALSE)
 ```
 
 ```{r functions, include=FALSE}
+#https://stackoverflow.com/questions/4341052/plotting-of-very-large-data-sets-in-r
+sample.df <- function(f,n=10000,split=" ",p=0.1){
+    con <- file(f,open="rt",)
+    on.exit(close(con,type="rt"))
+    y <- data.frame()
+    #read header
+    x <- character(0)
+    while(length(x)==0){
+      x <- strsplit(readLines(con,n=1),split)[[1]]
+    }
+    Names <- x
+    #read and process data
+    repeat{
+      x <- tryCatch(read.table(con,nrows=n,sep=split),error = function(e) NULL )
+      if(is.null(x)) {break}
+      names(x) <- Names
+      nn <- nrow(x)
+      id <- sample(1:nn,round(nn*p))
+      y <- rbind(y,x[id,])
+    }
+    rownames(y) <- NULL
+    return(y)
+}
+
 log10_minor_break = function (...){
     #https://stackoverflow.com/questions/30179442/plotting-minor-breaks-on-a-log-scale-with-ggplot
     function(x) {
@@ -37,11 +67,41 @@ log10_minor_break = function (...){
         maxx         = ceiling(max(log10(x), na.rm=T))+1;
         n_major      = maxx-minx+1;
         major_breaks = seq(minx, maxx, by=1)
-        minor_breaks = 
+        minor_breaks =
             rep(log10(seq(1, 9, by=1)), times = n_major)+
             rep(major_breaks, each = 9)
         return(10^(minor_breaks))
     }
+}
+
+log_breaks = function(maj, radix=10) {
+  #https://stackoverflow.com/questions/30179442/plotting-minor-breaks-on-a-log-scale-with-ggplot
+  function(x) {
+    minx         = floor(min(logb(x,radix), na.rm=T)) - 1
+    maxx         = ceiling(max(logb(x,radix), na.rm=T)) + 1
+    n_major      = maxx - minx + 1
+    major_breaks = seq(minx, maxx, by=1)
+    if (maj) {
+      breaks = major_breaks
+    } else {
+      steps = logb(1:(radix-1),radix)
+      breaks = rep(steps, times=n_major) +
+               rep(major_breaks, each=radix-1)
+    }
+    radix^breaks
+  }
+}
+scale_x_log_eng = function(..., radix=10) {
+  scale_x_continuous(...,
+                     trans=log_trans(radix),
+                     breaks=log_breaks(TRUE, radix),
+                     minor_breaks=log_breaks(FALSE, radix))
+}
+scale_y_log_eng = function(..., radix=10) {
+  scale_y_continuous(...,
+                     trans=log_trans(radix),
+                     breaks=log_breaks(TRUE, radix),
+                     minor_breaks=log_breaks(FALSE, radix))
 }
 
 readN = function(length, N=50, ...){
@@ -73,19 +133,22 @@ parser <- add_option(parser,
                      help="Output directory for the PoreQuality report"
                      )
 options=parse_args(parser)
-input.file=options$input.file
-# input.file="~/LXAAB112193_summary.txt" # <- useful if you want to specify a summary to run manually
+#input.file=options$input.file
+input.file="~/BC12_seq_sum.txt" # <- useful if you want to specify a summary to run manually
 bream.file=options$bream.file
 output.dir=options$output.dir
 ```
 
 ```{r setup, include=FALSE}
 seq_dt <- fread(input.file) # faster than optimized read.table call
+#seq_dt <- read.delim.ffdf(file=input.file, header=T)
+#seq_dt <- sample.df("~/NXBAA128793_summary.txt",n=1000,p=0.2) #n is number of lines to read at once, p is fraction to sample
 seq_dt <- seq_dt[order(seq_dt$start_time),]
 seq_dt$sequence_length_template <- as.numeric(seq_dt$sequence_length_template)
 seq_dt$cumulative_bases <- cumsum(as.numeric(seq_dt$sequence_length_template))/10^9
 muxes <- seq(from = 0, to = max(as.numeric(seq_dt$start_time) %/% 3600, na.rm=T), by = 8)
 seq_dt[is.na(seq_dt)] <- 0 # sanitizing
+seq_dt <- subset(seq_dt, seq_dt$mean_qscore_template > 0) # removes negative quality score reads (?!)
 ```
 
 ```{r PromethION_flowcell_layout, include=FALSE}
@@ -242,7 +305,7 @@ median.length = round(median(as.numeric(seq_dt$sequence_length_template)), digit
 max.length = max(as.numeric(seq_dt$sequence_length_template))
 max.pass.length = max(as.numeric(pass_df$sequence_length_template))
 mean.q = round(mean(as.numeric(seq_dt$mean_qscore_template)), digits = 1)
-median.q = round(median(seq_dt$mean_qscore_template), digits = 1)
+median.q = round(median(as.numeric(seq_dt$mean_qscore_template)), digits = 1)
 active.channels = length(unique(seq_dt$channel))
 #flowcell.quality = (active.channels / 512)*100
 run.length = (max(as.numeric(seq_dt$start_time))) %/% 3600
@@ -283,10 +346,10 @@ valueBox(round(mean.length/10^3,2),
          icon="glyphicon-stats")
 ```
 
-### Mean quality
+### Median quality
 
 ```{r, include=TRUE}
-valueBox(round(mean.q,2),
+valueBox(round(median.q,2),
          icon="glyphicon-stats")
 ```
 
@@ -306,12 +369,12 @@ valueBox(round(run.length,2),
          icon="glyphicon-time")
 ```
 
-### Active channels
+<!-- ### Active channels -->
 
-```{r, include=TRUE}
-flowcell.quality <- round((active.channels / 3000)*100,0)
-gauge(flowcell.quality,min=0,max=100,symbol='%',gaugeSectors(success=c(95,100),warning=c(80,94),danger=c(0,79)))
-```
+<!-- ```{r, include=TRUE} -->
+<!-- flowcell.quality <- round((active.channels / 3000)*100,0) -->
+<!-- gauge(flowcell.quality,min=0,max=100,symbol='%',gaugeSectors(success=c(95,100),warning=c(80,94),danger=c(0,79))) -->
+<!-- ``` -->
 
 Row {.tabset .tabset-fade}
 -----------------------------------------------------------------------
@@ -319,7 +382,7 @@ Row {.tabset .tabset-fade}
 ### Reads per sensor
 
 ```{r channel_activity}
-seq_dt <- seq_dt[sample(.N,1000000)] # Subsampling for PromethION runs
+seq_dt <- seq_dt[sample(.N,400000)] # Subsampling for PromethION runs
 s <- seq_dt[, list(channel)]
 rst <- as.data.frame(table(unlist(s)))
 colnames(rst)[1] <- "channel"
@@ -369,18 +432,30 @@ bnum=subset(seq_dt, sequence_length_template > 0)
 ```
 ```{r read_len_plot, include=TRUE}
 ggplot(bnum, aes(x=sequence_length_template)) +
-    geom_histogram(bins=30,binwidth = 1,colour=hm.palette(9)[8], fill=hm.palette(9)[4]) +
+    stat_density(aes(y=..count..), colour=hm.palette(9)[8], fill=hm.palette(9)[4], alpha=0.3) +
+    scale_x_continuous(breaks=seq(from=0,to=mean.length*4,by=250), expand=c(0,0), limits=c(0,mean.length*4)) +
     scale_y_continuous(expand=c(0,0)) +
-    scale_x_continuous(limits=c(0,mean.length*5),breaks=scales::pretty_breaks(n=10)) + #mean.length*5), breaks=pretty(bnum$sequence_length_template,n=40)) + # pretty(bnum$sequence_length_template,n=40) need to fix this to actually be dynamic and not empty for PromethION runs
     xlab("Read length\n") +
     ylab("Number of reads\n") +
-    geom_vline(xintercept = N50.read, size = 1) +
-    geom_text(aes(x=N50.read, label="N50", y=+Inf),vjust=+1,hjust=-.4) +
-    geom_vline(xintercept = mean.length, size = 1) +
-    geom_text(aes(x=mean.length, label="Mean", y=+Inf),vjust=+1,hjust=-.4) +
+    # geom_vline(xintercept = mean.length, size = 1) +
+    # geom_text(aes(x=mean.length, label="Mean", y=+Inf),vjust=+1,hjust=-.4) +
     theme_classic() + theme(axis.title = element_text(size=20),
-        axis.text.x = element_text(angle=45, hjust=1, size=12),
-        axis.text.y = element_text(size=12))
+    axis.text.x = element_text(angle=45, hjust=1, size=12),
+    axis.text.y = element_text(size=12))
+
+# ggplot(bnum, aes(x=sequence_length_template)) +
+#     geom_histogram(bins=30,binwidth = 1,colour=hm.palette(9)[8], fill=hm.palette(9)[4]) +
+#     scale_y_continuous(expand=c(0,0)) +
+#     #scale_x_log_eng() + #mean.length*5), breaks=pretty(bnum$sequence_length_template,n=40)) + # pretty(bnum$sequence_length_template,n=40) need to fix this to actually be dynamic and not empty for PromethION runs
+#     xlab("Read length\n") +
+#     ylab("Number of reads\n") +
+#     geom_vline(xintercept = N50.read, size = 1) +
+#     geom_text(aes(x=N50.read, label="N50", y=+Inf),vjust=+1,hjust=-.4) +
+#     geom_vline(xintercept = mean.length, size = 1) +
+#     geom_text(aes(x=mean.length, label="Mean", y=+Inf),vjust=+1,hjust=-.4) +
+#     theme_classic() + theme(axis.title = element_text(size=20),
+#         axis.text.x = element_text(angle=45, hjust=1, size=12),
+#         axis.text.y = element_text(size=12))
 ```
 
 ### Mean quality distribution per read
@@ -484,20 +559,20 @@ ggplot(data=seq_dt,aes(x=seq_dt$start_time / 3600)) +
         panel.grid.minor = element_blank())
 ```
 
-### Demultiplexing
-```{r demultiplex_plot, include=TRUE}
-if ("barcode_arrangement" %in% names(seq_dt)) {
-# it's a run that used the --barcoding flag
-barcode=count(seq_dt$barcode_arrangement)
-barcode=subset(barcode, freq > 150)
-ggplot(barcode, aes(x, freq, fill=x)) +
-    geom_bar(stat="identity", width=0.5) +
-    xlab("\nDemultiplexed barcodes") +
-    ylab("\nFrequency") +
-    scale_color_brewer(palette="Dark2") +
-    scale_y_continuous(expand = c(0,0)) +
-    theme_classic() +
-    theme(axis.text.x = element_text(angle=45, hjust=1, element_text(size=12)),
-    axis.text.y = element_text(size=12))
-}
-```
+<!-- ### Demultiplexing -->
+<!-- ```{r demultiplex_plot, include=TRUE} -->
+<!-- if ("barcode_arrangement" %in% names(seq_dt)) { -->
+<!-- # it's a run that used the --barcoding flag -->
+<!-- barcode=count(seq_dt$barcode_arrangement) -->
+<!-- barcode=subset(barcode, freq > 150) -->
+<!-- ggplot(barcode, aes(x, freq, fill=x)) + -->
+<!--     geom_bar(stat="identity", width=0.5) + -->
+<!--     xlab("\nDemultiplexed barcodes") + -->
+<!--     ylab("\nFrequency") + -->
+<!--     scale_color_brewer(palette="Dark2") + -->
+<!--     scale_y_continuous(expand = c(0,0)) + -->
+<!--     theme_classic() + -->
+<!--     theme(axis.text.x = element_text(angle=45, hjust=1, element_text(size=12)), -->
+<!--     axis.text.y = element_text(size=12)) -->
+<!-- } -->
+<!-- ``` -->

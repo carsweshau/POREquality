@@ -1,5 +1,5 @@
 ---
-title: "BC12" #"A POREquality report"
+title: "BC10" #"A POREquality report"
 output: 
   flexdashboard::flex_dashboard:
     theme: bootstrap
@@ -32,7 +32,7 @@ dv.palette <- colorRampPalette(brewer.pal(9, 'Spectral'),space='Lab')
 ```
 
 ```{r global_options, include=FALSE}
-opts_chunk$set(fig.width=12, fig.height=8, fig.path='images/', include=FALSE, echo=FALSE, warning=FALSE, message=FALSE)
+opts_chunk$set(fig.width=12, fig.height=8, include=FALSE, echo=FALSE, warning=FALSE, message=FALSE, fig.path='images/', dev=c('png', 'pdf'))
 ```
 
 ```{r functions, include=FALSE}
@@ -134,7 +134,7 @@ parser <- add_option(parser,
                      )
 options=parse_args(parser)
 #input.file=options$input.file
-input.file="~/BC12_seq_sum.txt" # <- useful if you want to specify a summary to run manually
+input.file="~/BC10_seq_sum.txt" # <- useful if you want to specify a summary to run manually
 bream.file=options$bream.file
 output.dir=options$output.dir
 ```
@@ -382,7 +382,7 @@ Row {.tabset .tabset-fade}
 ### Reads per sensor
 
 ```{r channel_activity}
-seq_dt <- seq_dt[sample(.N,400000)] # Subsampling for PromethION runs
+seq_dt <- seq_dt[sample(.N,1000000)] # Subsampling for PromethION runs
 s <- seq_dt[, list(channel)]
 rst <- as.data.frame(table(unlist(s)))
 colnames(rst)[1] <- "channel"
@@ -432,11 +432,11 @@ bnum=subset(seq_dt, sequence_length_template > 0)
 ```
 ```{r read_len_plot, include=TRUE}
 ggplot(bnum, aes(x=sequence_length_template)) +
-    stat_density(aes(y=..count..), colour=hm.palette(9)[8], fill=hm.palette(9)[4], alpha=0.3) +
+    geom_density(aes(y=..scaled..), colour=hm.palette(9)[8], fill=hm.palette(9)[4], alpha=0.3) +
     scale_x_continuous(breaks=seq(from=0,to=mean.length*4,by=250), expand=c(0,0), limits=c(0,mean.length*4)) +
     scale_y_continuous(expand=c(0,0)) +
     xlab("Read length\n") +
-    ylab("Number of reads\n") +
+    ylab("Density\n") +
     # geom_vline(xintercept = mean.length, size = 1) +
     # geom_text(aes(x=mean.length, label="Mean", y=+Inf),vjust=+1,hjust=-.4) +
     theme_classic() + theme(axis.title = element_text(size=20),
@@ -462,11 +462,11 @@ ggplot(bnum, aes(x=sequence_length_template)) +
 
 ```{r readqual, include=TRUE}
 ggplot(seq_dt, aes(x=mean_qscore_template)) +
-    geom_histogram(bins=max(seq_dt$mean_qscore_template),binwidth=1, colour=hm.palette(9)[8], fill=hm.palette(9)[4]) +
+    geom_density(aes(y=..scaled..), colour=hm.palette(9)[8], fill=hm.palette(9)[4], alpha=0.3) +
     scale_x_continuous(limits=c(0,max(seq_dt$mean_qscore_template)),breaks=seq(0,max(seq_dt$mean_qscore_template))) +
     scale_y_continuous(expand=c(0,0)) +
     xlab("\nMean quality of reads") +
-    ylab("Number of reads\n") +
+    ylab("Density\n") +
     theme_classic() + theme(axis.title = element_text(size=20),
         axis.text.x = element_text(size=12),
         axis.text.y = element_text(size=12))

@@ -1,5 +1,5 @@
 ---
-title: "BC10" #"A POREquality report"
+title: "A POREquality report"
 output: 
   flexdashboard::flex_dashboard:
     theme: bootstrap
@@ -133,8 +133,8 @@ parser <- add_option(parser,
                      help="Output directory for the PoreQuality report"
                      )
 options=parse_args(parser)
-#input.file=options$input.file
-input.file="~/BC10_seq_sum.txt" # <- useful if you want to specify a summary to run manually
+input.file=options$input.file
+#input.file="~/LXBAB132606_summary.txt" # <- useful if you want to specify a summary to run manually
 bream.file=options$bream.file
 output.dir=options$output.dir
 ```

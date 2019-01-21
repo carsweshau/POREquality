@@ -72,8 +72,8 @@ parser <- add_option(parser,
                      help="Output directory for the PoreQuality report"
                      )
 options=parse_args(parser)
-#input.file=options$input.file
-input.file="~/NLAAA149189_summary.txt" # <- useful if you want to specify a summary to run manually
+input.file=options$input.file
+#input.file="~/NLAAA149189_summary.txt" # <- useful if you want to specify a summary to run manually
 bream.file=options$bream.file
 output.dir=options$output.dir
 ```

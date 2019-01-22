@@ -287,8 +287,8 @@ for (i in 1:512){ # need to change this to be platform agnostic
     }
 }
 rst[is.na(rst)] <- 0
-rst <- rst[order(as.numeric(rst$channel),method = "radix"),]
-map <- map[order(as.numeric(map$channel),method = "radix"),]
+rst <- rst[order(as.numeric(rst$channel)),]
+map <- map[order(as.numeric(map$channel)),]
 map <- cbind(map, data.frame(frequency=0, stringsAsFactors = F))
 # cbind Freq to map, then use that to plot
 for (i in 1:512){ # promethion change

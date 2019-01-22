@@ -336,32 +336,43 @@ ggplot(map, aes(x = row, y = col, fill = frequency)) +
 bnum=subset(seq_dt, sequence_length_template > 0)
 ```
 ```{r read_len_plot, include=TRUE}
-## Old-porequality style (still good for medium yield, GridION runs)
 ggplot(bnum, aes(x=sequence_length_template)) +
-  geom_histogram(bins=200,colour=hm.palette(9)[8], fill=hm.palette(9)[4]) +
-  #geom_histogram(aes(y=..density..), colour="#2171b5", fill="#c6dbef",alpha=0.2) +
-  #geom_density(alpha=1, colour="#2171b5", fill="#c6dbef") +
-  #stat_density(geom="line") +
-  #scale_x_log10(expand=c(0,0),minor_breaks=log10_minor_break()) +
-  scale_y_continuous(expand=c(0,0)) +
-  #xlab("\nLog Read length") +
-  scale_x_continuous(limits=c(0,mean.length*4),breaks=pretty(bnum$sequence_length_template,n=40)) +
-  xlab("Read length\n") +
-  ylab("Number of reads\n") +
-  geom_vline(xintercept = N50.read, size = 1) +
-  geom_text(aes(x=N50.read, label="N50", y=+Inf),vjust=+1,hjust=-.4) +
-  # geom_vline(xintercept = N50.read, size = 1) +
-  # geom_text(aes(x=N50.read, label="L50", y=+Inf),vjust=+1,hjust=-.4) +
-  geom_vline(xintercept = mean.length, size = 1) +
-  #geom_text(aes(x=mean.length, label="Mean", y=+Inf),vjust=+1,hjust=-.4) +
-  #geom_vline(xintercept = median.length, size = 1) +
-  geom_text(aes(x=mean.length, label="Mean", y=+Inf),vjust=+1,hjust=-.4) +
-  theme_classic() + theme(axis.title = element_text(size=20),
-  axis.text.x = element_text(angle=45, hjust=1, size=12),
-  axis.text.y = element_text(size=12),
-  #panel.border = element_blank(),
-  panel.grid.major = element_blank(),
-  panel.grid.minor = element_blank())
+    geom_density(aes(y=..scaled..), colour=hm.palette(9)[8], fill=hm.palette(9)[4], alpha=0.3) +
+    scale_x_continuous(breaks=seq(from=0,to=mean.length*4,by=250), expand=c(0,0), limits=c(0,mean.length*4)) +
+    scale_y_continuous(expand=c(0,0)) +
+    xlab("Read length\n") +
+    ylab("Density\n") +
+    # geom_vline(xintercept = mean.length, size = 1) +
+    # geom_text(aes(x=mean.length, label="Mean", y=+Inf),vjust=+1,hjust=-.4) +
+    theme_classic() + theme(axis.title = element_text(size=20),
+    axis.text.x = element_text(angle=45, hjust=1, size=12),
+    axis.text.y = element_text(size=12))
+## Old-porequality style (still good for medium yield, GridION runs)
+# ggplot(bnum, aes(x=sequence_length_template)) +
+#   geom_histogram(bins=200,colour=hm.palette(9)[8], fill=hm.palette(9)[4]) +
+#   #geom_histogram(aes(y=..density..), colour="#2171b5", fill="#c6dbef",alpha=0.2) +
+#   #geom_density(alpha=1, colour="#2171b5", fill="#c6dbef") +
+#   #stat_density(geom="line") +
+#   #scale_x_log10(expand=c(0,0),minor_breaks=log10_minor_break()) +
+#   scale_y_continuous(expand=c(0,0)) +
+#   #xlab("\nLog Read length") +
+#   scale_x_continuous(limits=c(0,mean.length*4),breaks=pretty(bnum$sequence_length_template,n=40)) +
+#   xlab("Read length\n") +
+#   ylab("Number of reads\n") +
+#   geom_vline(xintercept = N50.read, size = 1) +
+#   geom_text(aes(x=N50.read, label="N50", y=+Inf),vjust=+1,hjust=-.4) +
+#   # geom_vline(xintercept = N50.read, size = 1) +
+#   # geom_text(aes(x=N50.read, label="L50", y=+Inf),vjust=+1,hjust=-.4) +
+#   geom_vline(xintercept = mean.length, size = 1) +
+#   #geom_text(aes(x=mean.length, label="Mean", y=+Inf),vjust=+1,hjust=-.4) +
+#   #geom_vline(xintercept = median.length, size = 1) +
+#   geom_text(aes(x=mean.length, label="Mean", y=+Inf),vjust=+1,hjust=-.4) +
+#   theme_classic() + theme(axis.title = element_text(size=20),
+#   axis.text.x = element_text(angle=45, hjust=1, size=12),
+#   axis.text.y = element_text(size=12),
+#   #panel.border = element_blank(),
+#   panel.grid.major = element_blank(),
+#   panel.grid.minor = element_blank())
 
 ## Newer style
 # ggplot(bnum, aes(x=sequence_length_template)) +
@@ -383,14 +394,23 @@ ggplot(bnum, aes(x=sequence_length_template)) +
 
 ```{r readqual, include=TRUE}
 ggplot(seq_dt, aes(x=mean_qscore_template)) +
-    geom_histogram(bins=max(seq_dt$mean_qscore_template),binwidth=1, colour=hm.palette(9)[8], fill=hm.palette(9)[4]) +
-    scale_x_continuous(breaks=0:max(seq_dt$mean_qscore_template)) +
+    geom_density(aes(y=..scaled..), colour=hm.palette(9)[8], fill=hm.palette(9)[4], alpha=0.3) +
+    scale_x_continuous(limits=c(0,max(seq_dt$mean_qscore_template)),breaks=seq(0,max(seq_dt$mean_qscore_template))) +
     scale_y_continuous(expand=c(0,0)) +
     xlab("\nMean quality of reads") +
-    ylab("Number of reads\n") +
+    ylab("Density\n") +
     theme_classic() + theme(axis.title = element_text(size=20),
         axis.text.x = element_text(size=12),
         axis.text.y = element_text(size=12))
+# ggplot(seq_dt, aes(x=mean_qscore_template)) +
+#     geom_histogram(bins=max(seq_dt$mean_qscore_template),binwidth=1, colour=hm.palette(9)[8], fill=hm.palette(9)[4]) +
+#     scale_x_continuous(breaks=0:max(seq_dt$mean_qscore_template)) +
+#     scale_y_continuous(expand=c(0,0)) +
+#     xlab("\nMean quality of reads") +
+#     ylab("Number of reads\n") +
+#     theme_classic() + theme(axis.title = element_text(size=20),
+#         axis.text.x = element_text(size=12),
+#         axis.text.y = element_text(size=12))
 ```
 
 ### Base quality over time
@@ -418,7 +438,7 @@ commonTheme = list(labs(color="Density",fill="Density",
                         y="Mean Read Quality Score\n"),
                    theme_classic())
 
-ggplot(seq_dt, aes(x=seq_dt$sequence_length_template,y=seq_dt$mean_qscore_template)) +
+p <- ggplot(seq_dt, aes(x=seq_dt$sequence_length_template,y=seq_dt$mean_qscore_template)) +
     stat_density2d(aes(fill=..level..),geom='polygon') +
     scale_fill_gradientn(colors = rev(dv.palette(100))) +
     scale_x_log10(expand=c(0,0),minor_breaks=log10_minor_break()) +
@@ -429,6 +449,7 @@ ggplot(seq_dt, aes(x=seq_dt$sequence_length_template,y=seq_dt$mean_qscore_templa
         panel.grid.minor = element_blank(),
         axis.text.x = element_text(size=12),
         axis.text.y = element_text(size=12))
+ggMarginal(p, type="density")
 ```
 
 ### Pore activity
@@ -479,22 +500,22 @@ ggplot(data=seq_dt,aes(x=seq_dt$start_time / 3600)) +
         panel.grid.minor = element_blank())
 ```
 
-### Demultiplexing
-```{r demultiplex_plot, include=TRUE}
-if ("barcode_arrangement" %in% names(seq_dt)) {
-# it's a run that used the --barcoding flag
-barcode=count(seq_dt$barcode_arrangement)
-#barcode=subset(barcode, freq > 150)
-#barcode=subset(barcode, freq < 500000)
-#low_bc=subset(barcode, freq < 1000)
-ggplot(barcode, aes(x, freq, fill=x)) +
-    geom_bar(stat="identity", width=0.5) +
-    xlab("\nDemultiplexed barcodes") +
-    ylab("\nFrequency") +
-    scale_color_brewer(palette="Dark2") +
-    scale_y_continuous(expand = c(0,0)) +
-    theme_classic() + scale_y_log10(expand=c(0,0),minor_breaks=log10_minor_break()) +
-    theme(axis.text.x = element_text(angle=90, element_text(size=12)),
-    axis.text.y = element_text(size=12))
-}
-```
+<!-- ### Demultiplexing -->
+<!-- ```{r demultiplex_plot, include=TRUE} -->
+<!-- if ("barcode_arrangement" %in% names(seq_dt)) { -->
+<!-- # it's a run that used the --barcoding flag -->
+<!-- barcode=count(seq_dt$barcode_arrangement) -->
+<!-- #barcode=subset(barcode, freq > 150) -->
+<!-- #barcode=subset(barcode, freq < 500000) -->
+<!-- #low_bc=subset(barcode, freq < 1000) -->
+<!-- ggplot(barcode, aes(x, freq, fill=x)) + -->
+<!--     geom_bar(stat="identity", width=0.5) + -->
+<!--     xlab("\nDemultiplexed barcodes") + -->
+<!--     ylab("\nFrequency") + -->
+<!--     scale_color_brewer(palette="Dark2") + -->
+<!--     scale_y_continuous(expand = c(0,0)) + -->
+<!--     theme_classic() + scale_y_log10(expand=c(0,0),minor_breaks=log10_minor_break()) + -->
+<!--     theme(axis.text.x = element_text(angle=90, element_text(size=12)), -->
+<!--     axis.text.y = element_text(size=12)) -->
+<!-- } -->
+<!-- ``` -->

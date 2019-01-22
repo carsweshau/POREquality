@@ -106,7 +106,6 @@ readN = function(length, N=50, ...){
     R50 = sorted[cumsum(sorted) >= sum(sorted)*N][1]
     return(R50)
 }
-}
 ```
 
 ```{r option_parsing, include=FALSE}

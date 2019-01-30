@@ -53,7 +53,7 @@ The (rather boorish) bash code below could be placed in a script and ran via cro
 ```bash
 NUMBER_OF_ACTIVE_RUNS=$(ps -ef | grep MinKNOW | grep experiment | grep sequencing | grep -v \"grep\" | wc -l)
 if [ $NUMBER_OF_ACTIVE_RUNS -gt 0 ]; then
-	exit 1 # files are still being written, will check later via cron
+  exit 1 # files are still being written, will check later via cron
 fi
 
 cd /data/basecalled # assumes GridION data structure
@@ -63,9 +63,9 @@ for run in *; do
     fi
     if [[ $run != "workspace" ]]; then
         if [ ! -f ${dir}_summary.txt ]; then
-			cat ${dir}/GA?0000/seq*.txt > ${dir}_raw_summary.txt # creating an intermediate file is distasteful here, you could grep off a header and append to your liking
-			awk ' /^filename/ && FNR > 1 {next} {print $0} ' ${dir}_raw_summary.txt > ${dir}_summary.txt && rm /data/basecalled/${dir}_raw_summary.txt
-		fi
+      cat ${dir}/GA?0000/seq*.txt > ${dir}_raw_summary.txt # creating an intermediate file is distasteful here, you could grep off a header and append to your liking
+      awk ' /^filename/ && FNR > 1 {next} {print $0} ' ${dir}_raw_summary.txt > ${dir}_summary.txt && rm /data/basecalled/${dir}_raw_summary.txt
+    fi
         if [ ! -f /data/reports/${run}.html ]; then
             Rscript -e "rmarkdown::render('/home/USER/POREquality/POREquality.Rmd', output_file=paste('/data/reports/${run}.html',sep=''))" -i /data/basecalled/${run}_summary.txt -o /data/reports
         fi

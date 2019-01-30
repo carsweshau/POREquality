@@ -134,7 +134,7 @@ parser <- add_option(parser,
                      )
 options=parse_args(parser)
 input.file=options$input.file
-#input.file="~/LXBAB132606_summary.txt" # <- useful if you want to specify a summary to run manually
+#input.file="~/BC08_seq_sum.txt" # <- useful if you want to specify a summary to run manually
 bream.file=options$bream.file
 output.dir=options$output.dir
 ```
@@ -143,6 +143,7 @@ output.dir=options$output.dir
 seq_dt <- fread(input.file) # faster than optimized read.table call
 #seq_dt <- read.delim.ffdf(file=input.file, header=T)
 #seq_dt <- sample.df("~/NXBAA128793_summary.txt",n=1000,p=0.2) #n is number of lines to read at once, p is fraction to sample
+# seq_dt <- seq_dt[sample(.N,1000000)]
 seq_dt <- seq_dt[order(seq_dt$start_time),]
 seq_dt$sequence_length_template <- as.numeric(seq_dt$sequence_length_template)
 seq_dt$cumulative_bases <- cumsum(as.numeric(seq_dt$sequence_length_template))/10^9
@@ -304,7 +305,11 @@ mean.length = round(mean(as.numeric(seq_dt$sequence_length_template)), digits = 
 median.length = round(median(as.numeric(seq_dt$sequence_length_template)), digits = 1)
 max.length = max(as.numeric(seq_dt$sequence_length_template))
 max.pass.length = max(as.numeric(pass_df$sequence_length_template))
-mean.q = round(mean(as.numeric(seq_dt$mean_qscore_template)), digits = 1)
+## Forrest Brennen on averaging Q-scores
+# The arithmetic mean of the qscores is 33 / 3 = 11.
+# The arithmetic mean of the error rates is 0.61 / 3 ~= 0.2.
+# The qscore for the arithmetic mean of the error rates is -10 * Log10(0.2) = 6.99
+mean.q = -10*log10(sum(10^(seq_dt$mean_qscore_template/-10)) / length(seq_dt$mean_qscore_template)) #round(mean(seq_dt$mean_qscore_template), digits = 1)
 median.q = round(median(as.numeric(seq_dt$mean_qscore_template)), digits = 1)
 active.channels = length(unique(seq_dt$channel))
 #flowcell.quality = (active.channels / 512)*100
@@ -369,12 +374,12 @@ valueBox(round(run.length,2),
          icon="glyphicon-time")
 ```
 
-<!-- ### Active channels -->
+### Active channels
 
-<!-- ```{r, include=TRUE} -->
-<!-- flowcell.quality <- round((active.channels / 3000)*100,0) -->
-<!-- gauge(flowcell.quality,min=0,max=100,symbol='%',gaugeSectors(success=c(95,100),warning=c(80,94),danger=c(0,79))) -->
-<!-- ``` -->
+```{r, include=TRUE}
+flowcell.quality <- round((active.channels / 3000)*100,0)
+gauge(flowcell.quality,min=0,max=100,symbol='%',gaugeSectors(success=c(95,100),warning=c(80,94),danger=c(0,79)))
+```
 
 Row {.tabset .tabset-fade}
 -----------------------------------------------------------------------
@@ -382,7 +387,7 @@ Row {.tabset .tabset-fade}
 ### Reads per sensor
 
 ```{r channel_activity}
-seq_dt <- seq_dt[sample(.N,1000000)] # Subsampling for PromethION runs
+#seq_dt <- seq_dt[sample(.N,100000)] # Subsampling for PromethION runs
 s <- seq_dt[, list(channel)]
 rst <- as.data.frame(table(unlist(s)))
 colnames(rst)[1] <- "channel"

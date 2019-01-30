@@ -93,6 +93,12 @@ I would like to thank [Dr. Martin Smith](https://twitter.com/martinalexsmith) fo
 
 Furthermore, the wider Nanopore community is a fantastic and welcoming place, and there are many aspects of POREquality which could not exist were it not for the hard work of many others providing this environment.
 
+## Cite
+
+[![DOI](https://zenodo.org/badge/141090375.svg)](https://zenodo.org/badge/latestdoi/141090375)
+
+Shaun L. Carswell, & Martin A. Smith. (2019, January 30). carsweshau/POREquality: Pre-release of POREquality alpha (Version v0.9.8). Zenodo. <https://doi.org/10.5281/zenodo.2552922>
+
 ## License
 
 [MIT License](https://opensource.org/licenses/MIT)

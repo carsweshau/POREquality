@@ -134,7 +134,7 @@ parser <- add_option(parser,
                      )
 options=parse_args(parser)
 input.file=options$input.file
-#input.file="~/BC08_seq_sum.txt" # <- useful if you want to specify a summary to run manually
+#input.file="~/LXAAB143625_summary.txt" # <- useful if you want to specify a summary to run manually
 bream.file=options$bream.file
 output.dir=options$output.dir
 ```
@@ -438,7 +438,7 @@ bnum=subset(seq_dt, sequence_length_template > 0)
 ```{r read_len_plot, include=TRUE}
 ggplot(bnum, aes(x=sequence_length_template)) +
     geom_density(aes(y=..scaled..), colour=hm.palette(9)[8], fill=hm.palette(9)[4], alpha=0.3) +
-    scale_x_continuous(breaks=seq(from=0,to=mean.length*4,by=250), expand=c(0,0), limits=c(0,mean.length*4)) +
+    scale_x_continuous(breaks=seq(from=0,to=mean.length*4,by=500), expand=c(0,0), limits=c(0,mean.length*4)) +
     scale_y_continuous(expand=c(0,0)) +
     xlab("Read length\n") +
     ylab("Density\n") +
@@ -503,7 +503,8 @@ commonTheme = list(labs(color="Density",fill="Density",
                    theme_classic())
 
 p <- ggplot(seq_dt, aes(x=seq_dt$sequence_length_template,y=seq_dt$mean_qscore_template)) +
-    stat_density2d(aes(fill=..level..),geom='polygon') +
+    geom_hex() +
+    #stat_density2d(aes(fill=..level..),geom='polygon') +
     scale_fill_gradientn(colors = rev(dv.palette(100))) +
     scale_x_log10(expand=c(0,0),minor_breaks=log10_minor_break()) +
     scale_y_continuous(expand=c(0,0)) +

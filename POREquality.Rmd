@@ -335,7 +335,7 @@ Row {.tabset .tabset-fade}
 ### Reads per sensor
 
 ```{r channel_activity}
-seq_dt <- seq_dt[sample(.N,1000000)] # Subsampling for PromethION runs
+#seq_dt <- seq_dt[sample(.N,1000000)] # Subsampling for PromethION runs
 s <- seq_dt[, list(channel)]
 rst <- as.data.frame(table(unlist(s)))
 colnames(rst)[1] <- "channel"

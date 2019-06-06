@@ -330,14 +330,14 @@ valueBox(round(total.reads/10^6,2),
          icon="fa-area-chart")
 ```
 
-### N50 (bp)
+### L50 (reads)
 
 ```{r, include=TRUE}
 valueBox(round(N50.read,2),
          icon="glyphicon-stats")
 ```
 
-### L50 read length (kbp)
+### N50 read length (kbp)
 
 ```{r, include=TRUE}
 valueBox(round(as.numeric(N50.length)/10^3,2),

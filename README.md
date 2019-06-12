@@ -20,21 +20,23 @@ POREquality has currently only been tested on Ubuntu, although provided the depe
    * data.table
    * flexdashboard
    * dplyr
+   * DT
    * plyr
    * ggExtra
    * ggplot2
-   * hexbin
    * knitr
    * optparse
    * RColorBrewer
    * reshape2
+   * ggridges
+   * scales
     
 ## Installation
 
 ### Required R packages
 
 ```r
-required.packages <- c("data.table","flexdashboard","dplyr","plyr","ggExtra","ggplot2","hexbin","knitr","optparse","RColorBrewer","reshape2")
+required.packages <- c("data.table","flexdashboard","dplyr","DT","plyr","ggExtra","ggplot2","knitr","optparse","RColorBrewer","reshape2","ggridges","scales")
 new.packages <- required.packages[!(required.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 ```

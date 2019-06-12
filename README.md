@@ -12,6 +12,7 @@ This is an early version of POREquality, an R Markdown script designed to run as
     
 <p align="center"><img src="images/example.png" alt="PORErun" width="100%"></p>
 <p align="center"><img src="images/example1.png" alt="Read quality versus log read length" width="100%"></p>
+<p align="center"><img src="images/example2.png" alt="Translocation speed during sequencing run" width="100%"></p>
     
 ## Requirements
 

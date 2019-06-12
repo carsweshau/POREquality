@@ -16,6 +16,7 @@ library(data.table) # used for fread, optimize reading sequencing summaries
 #library(ff) # used for extremely large sequencing summary files (Upper limit should be 10Gb for struc, we have >18Gb...)
 library(flexdashboard) # used for dashboard output
 library(dplyr) # data frame manipulation, these libraries should not be loaded in this order!
+library(DT) # used to include interactive DT in flexdashboard
 library(plyr) # purely for rbind.fill, should replace with bind_rows
 library(ggExtra) # extends ggplot functions, used for ggMarginal
 library(ggplot2) # main plotting functions
@@ -23,7 +24,9 @@ library(knitr) # creates .html output
 library(optparse) # used to run .Rmd script from command line
 library(RColorBrewer) # not strictly needed, but using for particular colours
 library(reshape2) # used for acast
+library(ggridges) # translocation speed plots
 library(scales) # used for log_trans
+#library(viridis) # attempting to prettify the translocation plot
 
 options(scipen=999)
 options(digits=2)
@@ -134,7 +137,7 @@ parser <- add_option(parser,
                      )
 options=parse_args(parser)
 input.file=options$input.file
-#input.file="~/LXAAB143625_summary.txt" # <- useful if you want to specify a summary to run manually
+#input.file="" # <- useful if you want to specify a summary to run manually
 bream.file=options$bream.file
 output.dir=options$output.dir
 ```
@@ -330,14 +333,14 @@ valueBox(round(total.reads/10^6,2),
          icon="fa-area-chart")
 ```
 
-### N50 (bp)
+### L50 (reads)
 
 ```{r, include=TRUE}
 valueBox(round(N50.read,2),
          icon="glyphicon-stats")
 ```
 
-### L50 read length (kbp)
+### N50 read length (kbp)
 
 ```{r, include=TRUE}
 valueBox(round(as.numeric(N50.length)/10^3,2),
@@ -428,6 +431,35 @@ ggplot(map, aes(x = row, y = col, fill = frequency)) +
         axis.title.y = element_blank(),
         legend.position="bottom",
         legend.key.width=unit(5.6,"cm"))
+```
+
+### Translocation speed over time
+
+```{r translocation_speed}
+seq_dt$hours <- round((seq_dt$start_time)/3600)
+seq_dt$interval <- findInterval(seq_dt$hours, seq(0,run.length,2))*2
+```
+```{r translocation_speed_plot, include=TRUE}
+# Violin plot
+# ggplot(seq_dt, aes(y=(sequence_length_template/duration),x=hours,group=interval)) +
+#     geom_violin() +
+#     ylab("Translocation speed (bp/s)") +
+#     xlab("Time (hours)") +
+#     theme_classic() + theme(axis.title = element_text(size=20),
+#     axis.text.x = element_text(angle=45, hjust=1, size=12),
+#     axis.text.y = element_text(size=12)) + theme_ridges()
+
+# Ridges
+ggplot(seq_dt, aes(x=(sequence_length_template/duration),y=hours,group=hours,fill=factor(..quantile..), height=..density..)) +
+    #geom_density_ridges_gradient(stat="density") +
+    stat_density_ridges(geom="density_ridges_gradient",calc_ecdf=T,quantiles = c(0.2, 0.8), quantile_lines = F) +
+    #scale_fill_viridis(direction = 1, guide = "none", option="A") +
+    scale_fill_manual(name = "Quartiles", values = c("#FF0000A0", "#A0A0A0A0", "#0000FFA0"),labels = c("(0, 0.2]", "(0.2, 0.8]", "(0.8, 1]")) +
+    xlab("Translocation speed (bp/s)") +
+    ylab("Time (hours)") +
+    theme_classic() + theme(axis.title = element_text(size=20),
+    axis.text.x = element_text(angle=45, hjust=1, size=12),
+    axis.text.y = element_text(size=12)) + theme_ridges()
 ```
 
 ### Read length distribution
@@ -563,6 +595,21 @@ ggplot(data=seq_dt,aes(x=seq_dt$start_time / 3600)) +
         axis.text.y = element_text(size=12),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())
+```
+
+### Top 10 longest reads
+```{r top10_set, include=FALSE}
+select <- c('read_id', 'sequence_length_template', 'start_time', 'mean_qscore_template')
+label <- c('Read ID', 'Read length (kbp)', 'Sequenced into run (hours)', 'Mean read quality')
+top10_dt <- head(setorder(seq_dt, -sequence_length_template),10)
+top10_dt$sequence_length_template <- top10_dt$sequence_length_template/1000
+top10_dt$start_time <- top10_dt$start_time/3600
+top10_dt <- top10_dt[, select, with=FALSE]
+setnames(top10_dt, old = select, new = label)
+
+```
+```{r top10, include=TRUE}
+DT::datatable(top10_dt, options=list(bPaginate=T))
 ```
 
 <!-- ### Demultiplexing -->

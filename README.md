@@ -9,8 +9,9 @@ This is an early version of POREquality, an R Markdown script designed to run as
     * Visually inspect information contained in the sequencing summary.
     * Sharing sequencing quality control reports with third-parties.
     * Diagnose problematic or under-performing runs.
-    
-- [POREquality](#porequality)
+
+## Table of contents
+
 - [Requirements](#requirements)
 - [Installation](#installation)
   * [Required R packages](#required-r-packages)

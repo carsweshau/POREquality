@@ -1,5 +1,15 @@
 <p align="center"><img src="images/pq_logo.png" alt="POREquality" width="25%"></p>
 
+## POREquality
+
+This is an early version of POREquality, an R Markdown script designed to run as part of a Nanopore local basecalling pipeline. POREquality reads Nanopore sequencing summary files to generate an aesthetically pleasing HTML report to faciliate the visualization of key metrics.
+
+* __Reasons to use POREquality__:
+    * Produce professional sequencing reports after any locally basecalled MinION or GridION run.
+    * Visually inspect information contained in the sequencing summary.
+    * Sharing sequencing quality control reports with third-parties.
+    * Diagnose problematic or under-performing runs.
+    
 - [POREquality](#porequality)
 - [Requirements](#requirements)
 - [Installation](#installation)
@@ -11,16 +21,6 @@
 - [Acknowledgments](#acknowledgments)
 - [Cite](#cite)
 - [License](#license)
-
-## POREquality
-
-This is an early version of POREquality, an R Markdown script designed to run as part of a Nanopore local basecalling pipeline. POREquality reads Nanopore sequencing summary files to generate an aesthetically pleasing HTML report to faciliate the visualization of key metrics.
-
-* __Reasons to use POREquality__:
-    * Produce professional sequencing reports after any locally basecalled MinION or GridION run.
-    * Visually inspect information contained in the sequencing summary.
-    * Sharing sequencing quality control reports with third-parties.
-    * Diagnose problematic or under-performing runs.
     
 <p align="center"><img src="images/example.png" alt="PORErun" width="100%"></p>
 <p align="center"><img src="images/example1.png" alt="Read quality versus log read length" width="100%"></p>

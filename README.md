@@ -4,6 +4,18 @@
 
 This is an early version of POREquality, an R Markdown script designed to run as part of a Nanopore local basecalling pipeline. POREquality reads Nanopore sequencing summary files to generate an aesthetically pleasing HTML report to faciliate the visualization of key metrics.
 
+- [POREquality](#porequality)
+- [Requirements](#requirements)
+- [Installation](#installation)
+  * [Required R packages](#required-r-packages)
+  * [Install with required dependencies](#install-with-required-dependencies)
+- [Example usage](#example-usage)
+- [Future development](#future-development)
+- [Contributing](#contributing)
+- [Acknowledgments](#acknowledgments)
+- [Cite](#cite)
+- [License](#license)
+
 * __Reasons to use POREquality__:
     * Produce professional sequencing reports after any locally basecalled MinION or GridION run.
     * Visually inspect information contained in the sequencing summary.

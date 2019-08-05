@@ -599,7 +599,7 @@ ggplot(data=seq_dt,aes(x=seq_dt$start_time / 3600)) +
 ```{r top10_set, include=FALSE}
 select <- c('read_id', 'sequence_length_template', 'start_time', 'mean_qscore_template')
 label <- c('Read ID', 'Read length (kbp)', 'Sequenced into run (hours)', 'Mean read quality')
-top10_dt <- head(setorder(seq_dt, -sequence_length_template),10)
+top10_dt <- head(setorder(pass_df, -sequence_length_template),10)
 top10_dt$sequence_length_template <- top10_dt$sequence_length_template/1000
 top10_dt$start_time <- top10_dt$start_time/3600
 top10_dt <- top10_dt[, select, with=FALSE]
